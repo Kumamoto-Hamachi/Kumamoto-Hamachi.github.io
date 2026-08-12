@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ピンホールの演習</title>
+<style>
+  :root {
+    --ground: #E7EAEE;
+    --surface: #F1F3F6;
+    --panel: #FDFDFE;
+    --ink: #151A22;
+    --ink-2: #454F5E;
+    --muted: #78828F;
+    --line: #C6CCD5;
+    --line-soft: #DDE1E7;
+    --ray: #C26C15;
+    --tri: #2E7D9A;
+    --warn: #AC403A;
+    --ok: #3F7A52;
+
+    --mincho: "Hiragino Mincho ProN", "HiraMinProN-W3", "Yu Mincho", YuMincho, "Noto Serif CJK JP", "Noto Serif JP", "Source Han Serif JP", "Songti SC", serif;
+    --gothic: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans CJK JP", "Noto Sans JP", "Yu Gothic", YuGothic, Meiryo, system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Code", "Roboto Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #10141A;
+      --surface: #161B23;
+      --panel: #1B212A;
+      --ink: #E4E9F0;
+      --ink-2: #AAB4C2;
+      --muted: #7C8695;
+      --line: #333C48;
+      --line-soft: #262E39;
+      --ray: #EFA85C;
+      --tri: #5AB2CE;
+      --warn: #E07A72;
+      --ok: #74B98C;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #10141A;
+    --surface: #161B23;
+    --panel: #1B212A;
+    --ink: #E4E9F0;
+    --ink-2: #AAB4C2;
+    --muted: #7C8695;
+    --line: #333C48;
+    --line-soft: #262E39;
+    --ray: #EFA85C;
+    --tri: #5AB2CE;
+    --warn: #E07A72;
+    --ok: #74B98C;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--gothic);
+    font-size: 15px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 900px;
+    margin-inline: auto;
+    padding: clamp(28px, 5vw, 64px) clamp(16px, 4vw, 40px) 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+  }
+
+  /* ---------- header ---------- */
+
+  header { display: flex; flex-direction: column; gap: 20px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  h1 {
+    font-family: var(--mincho);
+    font-weight: 600;
+    font-size: clamp(30px, 5.2vw, 46px);
+    line-height: 1.3;
+    letter-spacing: .02em;
+    text-wrap: balance;
+  }
+
+  .lede { max-width: 38em; color: var(--ink-2); }
+  .lede a { color: var(--tri); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .lede em { font-style: normal; font-family: var(--mono); font-size: .94em; }
+
+  /* ---------- formula reference ---------- */
+
+  .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  .ref-cell { background: var(--panel); padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .ref-cell .k { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--muted); }
+  .ref-cell .v { font-family: var(--mono); font-size: 14.5px; color: var(--ray); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .ref-cell p { font-size: 13px; color: var(--ink-2); line-height: 1.75; }
+
+  .premise {
+    border-left: 2px solid var(--ray);
+    padding: 2px 0 2px 16px;
+    max-width: 42em;
+    color: var(--ink-2);
+    font-size: 13px;
+  }
+  .premise em { font-style: normal; font-family: var(--mono); font-size: .94em; }
+
+  /* ---------- sections ---------- */
+
+  section { display: flex; flex-direction: column; gap: 22px; }
+
+  h2 {
+    font-family: var(--mincho);
+    font-weight: 600;
+    font-size: clamp(21px, 3vw, 27px);
+    line-height: 1.5;
+    letter-spacing: .02em;
+    text-wrap: balance;
+  }
+
+  .sec-head { display: flex; flex-direction: column; gap: 12px; }
+  .prose { max-width: 42em; color: var(--ink-2); }
+  .prose em { font-style: normal; font-family: var(--mono); font-size: .94em; }
+
+  /* ---------- question card ---------- */
+
+  .q { background: var(--panel); border: 1px solid var(--line); }
+
+  .q-bar {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 9px 18px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--surface);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    color: var(--muted);
+  }
+  .q-bar b { color: var(--ray); font-weight: 600; letter-spacing: .14em; font-size: 12px; }
+  .q-bar .note { margin-left: auto; letter-spacing: .04em; }
+
+  .q-body {
+    padding: 18px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .q-body p { max-width: 44em; color: var(--ink); font-size: 14.5px; }
+  .q-body em { font-style: normal; font-family: var(--mono); font-size: .94em; }
+
+  .given {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--line-soft);
+    padding: 8px 14px;
+    align-self: flex-start;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.9;
+  }
+
+  ol.parts {
+    list-style: none;
+    counter-reset: part;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 44em;
+  }
+  ol.parts li { counter-increment: part; padding-left: 2em; position: relative; font-size: 14.5px; }
+  ol.parts li::before {
+    content: "(" counter(part, lower-latin) ")";
+    position: absolute;
+    left: 0;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  ol.parts em { font-style: normal; font-family: var(--mono); font-size: .94em; }
+
+  /* ---------- answer ---------- */
+
+  details.ans { border-top: 1px solid var(--line-soft); }
+  details.ans > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 11px 20px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: .16em;
+    color: var(--muted);
+    user-select: none;
+    background: var(--surface);
+  }
+  details.ans > summary::-webkit-details-marker { display: none; }
+  details.ans > summary::before { content: "▸"; margin-right: 9px; color: var(--ray); }
+  details.ans[open] > summary::before { content: "▾"; }
+  details.ans[open] > summary { border-bottom: 1px solid var(--line-soft); color: var(--ink-2); }
+
+  .ans-body {
+    padding: 18px 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ans-body p { max-width: 44em; color: var(--ink-2); font-size: 13.5px; }
+  .ans-body p strong { color: var(--ink); font-weight: 600; }
+  .ans-body em { font-style: normal; font-family: var(--mono); font-size: .94em; }
+
+  .mathblock {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line-soft);
+    padding: 12px 16px;
+    align-self: stretch;
+  }
+  .mathline {
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: clamp(12.5px, 1.7vw, 14px);
+    line-height: 2;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .mathline .res { color: var(--ray); font-weight: 600; }
+  .mathline .cm { color: var(--muted); }
+
+  .ans-note {
+    border-left: 2px solid var(--tri);
+    padding: 2px 0 2px 16px;
+    max-width: 42em;
+    color: var(--ink-2);
+    font-size: 13px;
+  }
+  .ans-note em { font-style: normal; font-family: var(--mono); font-size: .94em; }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 42em;
+  }
+  footer a { color: var(--tri); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Pinhole camera model / Exercises</div>
+    <h1>ピンホールの演習</h1>
+    <p class="lede">
+      ガイド「<a href="pinhole-camera-model.html">ピンホールの相似三角形</a>」の内容だけで解ける12問です。
+      数値はどれも筆算で終わる大きさにしてあります。
+      まず自力で答えを出し、それから折りたたみを開いて確かめてください。
+    </p>
+    <div class="ref-grid">
+      <div class="ref-cell">
+        <span class="k">相似三角形</span>
+        <span class="v">p / f<sub>x</sub> = L / Z</span>
+        <p>どの1文字についても解ける。未知数が1つになるように残りを与えるのが各問の設定です。</p>
+      </div>
+      <div class="ref-cell">
+        <span class="k">1 px の重み</span>
+        <span class="v">ΔZ ≈ Z² / (f<sub>x</sub>L) · Δp</span>
+        <p>測定誤差 Δp が距離誤差 ΔZ になる換算式。どちらも誤差の大きさ（符号なし）で、Z の2乗で効きます。</p>
+      </div>
+      <div class="ref-cell">
+        <span class="k">傾き θ（縦軸まわり）</span>
+        <span class="v">端の奥行き Z ∓ sinθ · L/2</span>
+        <p>縦の辺は実寸 L のまま、横幅はほぼ L·cosθ に縮んで写ります。</p>
+      </div>
+    </div>
+    <p class="premise">
+      全問共通の前提。歪みのない理想カメラを仮定し、画素は正方（<em>f<sub>x</sub> = f<sub>y</sub></em>）とします。
+      また <em>Z</em> はカメラ中心からの直線距離ではなく、光軸方向の奥行き（OpenCV のカメラ座標 <em>Z<sub>c</sub></em>）を指します。
+      正対して中心が光軸上にあるマーカーでは、中心についてこの2つは一致します。
+    </p>
+  </header>
+
+  <!-- ============ A ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>A　式を両方向に使う</h2>
+      <p class="prose">
+        まずは <em>p / f<sub>x</sub> = L / Z</em> を順方向（大きさを予測する）と逆方向（距離を求める）に使います。
+        どの問題も、4つの文字のうち3つを与えて残り1つを問う形です。
+      </p>
+    </div>
+
+    <div class="q">
+      <div class="q-bar"><b>問 1</b><span>画像上の大きさを予測する</span><span class="note">ガイド FIG. 1</span></div>
+      <div class="q-body">
+        <p>一辺 12 cm の ArUco マーカーを、カメラから 1.5 m の位置に正対させて置いた。画像上では一辺何 px に写るか。</p>
+        <div class="given">f<sub>x</sub> = 800 px　L = 0.12 m　Z = 1.5 m</div>
+      </div>
+      <details class="ans">
+        <summary>解答</summary>
+        <div class="ans-body">
+          <div class="mathblock">
+            <div class="mathline">p = f<sub>x</sub> · L / Z = 800 × 0.12 / 1.5 = <span class="res">64 px</span></div>
+          </div>
+          <p>
+            検算は比で見るのが早い。実物側の比は <em>L / Z = 0.08</em> で、これを <em>f<sub>x</sub></em> 倍したものが画像上の大きさになる。
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <div class="q">
+      <div class="q-bar"><b>問 2</b><span>距離を推定する</span><span class="note">ガイド FIG. 1</span></div>
+      <div class="q-body">
+        <p>同じカメラで一辺 10 cm のマーカーを撮ったところ、画像上の一辺は 40 px だった。マーカーまでの距離 Z を求めよ。</p>
+        <div class="given">f<sub>x</sub> = 800 px　L = 0.10 m　p = 40 px</div>
+      </div>
+      <details class="ans">
+        <summary>解答</summary>
+        <div class="ans-body">
+          <div class="mathblock">
+            <div class="mathline">Z = f<sub>x</sub> · L / p = 800 × 0.10 / 40 = <span class="res">2.0 m</span></div>
+          </div>
+          <p>
+            ガイドが「これが距離推定の全体です」と書いていた1行がこれにあたる。
+            実際に画像から測れるのは <em>p</em> だけで、<em>f<sub>x</sub></em> はキャリブレーション、<em>L</em> は印刷実寸として与えられている。
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <div class="q">
+      <div class="q-bar"><b>問 3</b><span>焦点距離を逆算する</span><span class="note">ガイド FIG. 1</span></div>
+      <div class="q-body">
+        <p>
+          <em>f<sub>x</sub></em> が分からないカメラがある。一辺 10 cm のマーカーを 50 cm の位置に正対で置いて撮ると、画像上の一辺は 160 px だった。
+        </p>
+        <ol class="parts">
+          <li><em>f<sub>x</sub></em> を求めよ。</li>
+          <li>実際のカメラキャリブレーションは、この方法（1枚の画像で1本の辺を測る）を使わない。理由を1つ挙げよ。</li>
+        </ol>
+        <div class="given">L = 0.10 m　Z = 0.50 m　p = 160 px</div>
+      </div>
+      <details class="ans">
+        <summary>解答</summary>
+        <div class="ans-body">
+          <div class="mathblock">
+            <div class="mathline">(a)　f<sub>x</sub> = p · Z / L = 160 × 0.50 / 0.10 = <span class="res">800 px</span></div>
+          </div>
+          <p>
+            (b) は次のいずれか1つで正解とする。
+            <em>p</em> や <em>Z</em> の相対誤差がそのまま <em>f<sub>x</sub></em> の相対誤差になって乗る（<em>δf<sub>x</sub>/f<sub>x</sub> ≈ δp/p + δZ/Z − δL/L</em>。実際のキャリブレーションは多数の点から最小二乗で求めて誤差を均す）。
+            この1枚では主点 <em>c<sub>x</sub>, c<sub>y</sub></em> やレンズ歪みが求まらない。
+            そもそも <em>Z</em> を数 mm の精度で実測すること自体が難しい。
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <div class="q">
+      <div class="q-bar"><b>問 4</b><span>画面に収まる限界</span><span class="note">ガイド FIG. 1 プレビュー</span></div>
+      <div class="q-body">
+        <p>
+          一辺 10 cm のマーカーを、中心が画像中心に写るよう正対させたままカメラに近づけていく。
+          画像が 640 × 480 px のとき、マーカー全体が画像に収まるのは Z が何 m 以上のときか。
+        </p>
+        <div class="given">f<sub>x</sub> = f<sub>y</sub> = 800 px　L = 0.10 m　画像 640 × 480 px</div>
+      </div>
+      <details class="ans">
+        <summary>解答</summary>
+        <div class="ans-body">
+          <div class="mathblock">
+            <div class="mathline">縦の条件　p<sub>y</sub> = f<sub>y</sub>L / Z ≤ 480</div>
+            <div class="mathline">Z ≥ 80 / 480 = 0.1667 m ≈ <span class="res">16.7 cm</span></div>
+          </div>
+          <p>
+            画像上の縦の大きさを決めるのは <em>f<sub>y</sub></em> で、正方画素の前提から <em>f<sub>x</sub></em> と同じ 800 px を使える。
+            制約になるのは短い方の縦 480 px で、横 640 px は自動的に満たされる。
+            ガイドのプレビューに「画面からはみ出しています」と表示される条件がこれにあたる。
+            なお実際の検出では、収まっていても近すぎるとピントや歪みの問題が先に効いてくる。
+          </p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ B ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>B　1 px の重みを見積もる</h2>
+      <p class="prose">
+        次に、近似式 <em>ΔZ ≈ Z²/(f<sub>x</sub>L) · Δp</em> に数字を入れて、誤差が Z の2乗で効くことを確かめます。
+        3問を通して <em>K = f<sub>x</sub>L = 80 px·m</em>（ガイドの初期値）を使います。
+      </p>
+    </div>
+
+    <div class="q">
+      <div class="q-bar"><b>問 5</b><span>2乗則を数字で見る</span><span class="note">ガイド FIG. 2</span></div>
+      <div class="q-body">
+        <p>
+          <em>p</em> の測定に ±1 px の誤差があるとする。Z = 1.0 m のときと Z = 2.0 m のときの距離誤差 ΔZ をそれぞれ求めよ。
+        </p>
+        <div class="given">K = f<sub>x</sub>L = 80 px·m　Δp = 1 px</div>
+      </div>
+      <details class="ans">
+        <summary>解答</summary>
+        <div class="ans-body">
+          <div class="mathblock">
+            <div class="mathline">Z = 1.0 m　ΔZ ≈ 1.0² / 80 = 0.0125 m = <span class="res">± 1.25 cm</span></div>
+            <div class="mathline">Z = 2.0 m　ΔZ ≈ 2.0² / 80 = 0.05 m = <span class="res">± 5 cm</span></div>
+          </div>
+          <p>
+            距離が2倍になると誤差は4倍になる。マーカーが遠いほど <em>p</em> が小さく、反比例カーブが寝ているため、同じ 1 px が広い距離範囲に対応してしまう。
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <div class="q">
+      <div class="q-bar"><b>問 6</b><span>精度から仕様を決める</span><span class="note">ガイド FIG. 2</span></div>
+      <div class="q-body">
+        <p>
+          測定精度は ±1 px のまま、Z = 2.0 m での距離誤差を ±1 cm 以下に抑えたい。
+        </p>
+        <ol class="parts">
+          <li>積 <em>K = f<sub>x</sub>L</em> はいくら以上必要か。</li>
+          <li><em>f<sub>x</sub> = 800 px</em> のままなら、マーカーの一辺 L は何 cm 必要か。</li>
+          <li><em>L = 0.10 m</em> のままなら <em>f<sub>x</sub></em> はいくら必要か。同じレンズとセンサーサイズで画素数だけを 640 × 480 から 3840 × 2160 に上げる（<em>f<sub>x</sub></em> は横解像度に比例して 6 倍になる）と、この条件に届くか。</li>
+        </ol>
+      </div>
+      <details class="ans">
+        <summary>解答</summary>
+        <div class="ans-body">
+          <div class="mathblock">
+            <div class="mathline">(a)　K ≥ Z² · Δp / ΔZ = 2.0² × 1 / 0.01 = <span class="res">400 px·m</span></div>
+            <div class="mathline">(b)　L ≥ 400 / 800 = 0.5 m = <span class="res">一辺 50 cm</span></div>
+            <div class="mathline">(c)　f<sub>x</sub> ≥ 400 / 0.10 = 4000 px　　800 × 6 = 4800 px ≥ 4000 <span class="cm">→ 届く</span></div>
+          </div>
+          <p>
+            マーカーの拡大も解像度の向上も、どちらも積 <em>K = f<sub>x</sub>L</em> を大きくする操作という点では同じ。
+            ただし一辺 50 cm のマーカーを置ける現場は少ないので、この例では解像度を上げる方が現実的といえる。
+            なお (c) の結論は、画素数を増やしても検出誤差が ±1 px のままという問題文の仮定の上に立つ。実際の検出誤差は画素数だけでなくレンズやノイズにも左右される。
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <div class="q">
+      <div class="q-bar"><b>問 7</b><span>近似式と厳密計算の差</span><span class="note">ガイド「1 px のずれを距離のずれに直す」</span></div>
+      <div class="q-body">
+        <p>
+          真の距離 Z = 4.0 m（つまり p = 20 px）とする。<em>p</em> を 1 px 小さく測ったとき、および 1 px 大きく測ったときに得られる距離を厳密に計算し、近似式の答え ±20 cm と比べよ。
+        </p>
+        <div class="given">K = 80 px·m　Z = 4.0 m　p = 20 px</div>
+      </div>
+      <details class="ans">
+        <summary>解答</summary>
+        <div class="ans-body">
+          <div class="mathblock">
+            <div class="mathline">19 px と測った場合　80 / 19 = 4.211 m <span class="res">（+21.1 cm）</span></div>
+            <div class="mathline">21 px と測った場合　80 / 21 = 3.810 m <span class="res">（−19.0 cm）</span></div>
+            <div class="mathline cm">近似　ΔZ ≈ 4.0² / 80 = ± 20 cm</div>
+          </div>
+          <p>
+            近似の ±20 cm は両者のほぼ中間に収まるが、厳密には対称でない。遠い側のずれ（+21.1 cm）の方が近い側（−19.0 cm）より大きい。
+            <em>Z = K/p</em> の曲線が下に凸だからで、<em>|δp|</em> が <em>p</em> に対して無視できない比率（この例では 5 %）になるほど非対称が目立つ。
+            導出の途中で置いた「<em>p + δp ≈ p</em>」がまさにこの差を丸めている。
+          </p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ C ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>C　正対が崩れたとき</h2>
+      <p class="prose">
+        マーカーを縦軸まわりに θ 傾けると、左端と右端で奥行き（光軸方向の <em>Z<sub>c</sub></em>）が変わります。
+        設定はガイド FIG. 3 と同じ（Z = 1.0 m、L = 0.10 m、f<sub>x</sub> = 800 px）です。
+      </p>
+    </div>
+
+    <div class="q">
+      <div class="q-bar"><b>問 8</b><span>縦の辺が返す距離</span><span class="note">ガイド FIG. 3</span></div>
+      <div class="q-body">
+        <p>θ = 30° 傾けた。</p>
+        <ol class="parts">
+          <li>マーカーの左端（カメラから見て遠ざかる側）と右端の奥行きをそれぞれ求めよ。</li>
+          <li>画像上の左辺（縦）の長さを <em>Z = f<sub>x</sub>L / p</em> に入れると、返ってくる値は何か。</li>
+        </ol>
+        <div class="given">Z = 1.0 m　L = 0.10 m　θ = 30°　sin 30° = 0.5</div>
+      </div>
+      <details class="ans">
+        <summary>解答</summary>
+        <div class="ans-body">
+          <div class="mathblock">
+            <div class="mathline">(a)　奥行きのずれ = sinθ · L/2 = 0.5 × 0.05 = 0.025 m</div>
+            <div class="mathline">　　 左端 1.0 + 0.025 = <span class="res">1.025 m</span>　　右端 1.0 − 0.025 = <span class="res">0.975 m</span></div>
+            <div class="mathline">(b)　左辺の見かけ p = 80 / 1.025 = 78.0 px　→　Z = 80 / 78.0 = <span class="res">1.025 m（左辺の奥行き）</span></div>
+          </div>
+          <p>
+            縦の辺は傾けても実寸 <em>L</em> のままなので、式は壊れていない。
+            その辺の奥行きを正しく返している。左辺と右辺で答えが 5 cm 違うのは、奥行きが実際に 5 cm 違うからだ。
+          </p>
+          <p class="ans-note">
+            奥行きはカメラ中心からの直線距離ではない。左端は横方向にも <em>cos 30° × 0.05 ≈ 0.043 m</em> ずれているので、左端の中央までの直線距離は <em>√(1.025² + 0.043²) ≈ 1.026 m</em> とわずかに大きい。
+            しかも縦の辺に沿っては高さ（<em>Y<sub>c</sub></em>）が変わるため、辺全体に1つの直線距離は割り当てられない。
+            一方、奥行き <em>Z<sub>c</sub></em> は縦の辺に沿って一定で、だから式は 1.025 m という1つの値を返せる。
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <div class="q">
+      <div class="q-bar"><b>問 9</b><span>横幅で測る誤り</span><span class="note">ガイド FIG. 3 の警告</span></div>
+      <div class="q-body">
+        <p>
+          θ = 60° まで傾けた。横幅は <em>L·cosθ</em> に縮んで写る（左右の奥行き差の影響はここでは無視してよい）。
+          縮んだ横幅の測定値を実寸 <em>L</em> と思い込んで <em>Z = f<sub>x</sub>L / p</em> に入れると、距離はいくらと出るか。真値 1.0 m に対する誤差率も求めよ。
+        </p>
+        <div class="given">Z = 1.0 m　L = 0.10 m　θ = 60°　cos 60° = 0.5</div>
+      </div>
+      <details class="ans">
+        <summary>解答</summary>
+        <div class="ans-body">
+          <div class="mathblock">
+            <div class="mathline">見かけの横幅　p ≈ f<sub>x</sub> · L·cosθ / Z</div>
+            <div class="mathline">推定距離　Z′ = f<sub>x</sub>L / p = Z / cosθ = 1.0 / 0.5 = <span class="res">2.0 m（+100 %）</span></div>
+          </div>
+          <p>
+            半分に縮んだ辺を実寸だと思って割るので、ちょうどその逆数倍（1/cosθ 倍）遠いと誤る。
+            式の限界ではなく、前提（正対）を破ったまま使ったことの帰結である。
+          </p>
+          <p class="ans-note">
+            無視した奥行き差まで入れて厳密に計算すると 1.996 m で、答えはほとんど変わらない。
+            ガイド FIG. 3 の表で θ = 60° のとき「上辺（横）」の行に出る値がこれにあたる。
+          </p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ D ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>D　理屈を言葉で確かめる</h2>
+      <p class="prose">
+        最後は計算ではなく、モデルの読み方を問う3問です。自分の言葉で説明できれば、ガイドの図に戻る必要はもうありません。
+      </p>
+    </div>
+
+    <div class="q">
+      <div class="q-bar"><b>問 10</b><span>比 p / f<sub>x</sub> の正体</span><span class="note">ガイド冒頭の式</span></div>
+      <div class="q-body">
+        <p>
+          <em>p / f<sub>x</sub> = L / Z</em> の両辺は単位を持たない比である。この比は幾何的に何を表すか。
+          また、焦点距離 <em>f<sub>x</sub></em> の単位が m ではなく px であるのはなぜか。
+        </p>
+      </div>
+      <details class="ans">
+        <summary>解答</summary>
+        <div class="ans-body">
+          <p>
+            両辺とも「光軸に垂直な大きさ ÷ 光軸方向の奥行き」という比で、マーカーの<strong>見かけの角度の大きさ</strong>を測っている。
+            中心が光軸上にあるマーカー全体を見込む角を <em>ω</em> とすると、上端は光軸から <em>ω/2</em> の方向にあるので
+            <em>tan(ω/2) = (L/2)/Z = (p/2)/f<sub>x</sub></em>、両辺を2倍して <em>p/f<sub>x</sub> = L/Z = 2 tan(ω/2)</em> となる
+            （正接は角度に比例しないので、この値は <em>tan ω</em> そのものではない）。
+            カメラが直接測っているのは長さではなく角度なので、<em>L</em> か <em>Z</em> のどちらかを外から与えない限り、もう一方は決まらない。
+            小さくて近いマーカーと大きくて遠いマーカーは、同じ大きさに写る。
+          </p>
+          <p>
+            <em>f<sub>x</sub></em> はレンズの焦点距離（m）を画素ピッチ（m/px）で割った値なので、単位は px になる。
+            「正接が 1、つまり光軸から 45° の方向にある点は、主点から <em>f<sub>x</sub></em> px 離れた位置に写る」と読める。
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <div class="q">
+      <div class="q-bar"><b>問 11</b><span>反転が式に現れない理由</span><span class="note">ガイド FIG. 1 の ▲▼</span></div>
+      <div class="q-body">
+        <p>
+          実際のセンサーに届く像は上下左右が反転している。それなのに投影の式 <em>u = f<sub>x</sub> · X<sub>c</sub> / Z<sub>c</sub> + c<sub>x</sub></em> に反転（マイナス符号）が現れないのはなぜか。
+        </p>
+      </div>
+      <details class="ans">
+        <summary>解答</summary>
+        <div class="ans-body">
+          <p>
+            OpenCV の式は、ピンホールの<strong>手前</strong>（被写体側）距離 <em>f<sub>x</sub></em> の位置に仮想の画像面を置いて立てられている。
+            光線がこの面を通過する点は反転していないので、式に符号は要らない。
+          </p>
+          <p>
+            実センサー側の反転が消えるわけではない。式が前提にしているのは「ユーザーに渡る画像は正立していて、その画像上で左上原点（u は右向き、v は下向き）の座標を取る」という規約までで、
+            反転像をどの段階で並べ替えるか（読み出し順か、画像処理パイプラインのどこかか）はカメラの実装による。
+            どこで行われるにせよ、渡された画像が正立している限り、数式の側に符号を持たせる必要はない。
+            ガイド FIG. 1 の ▲▼ が実センサー側の反転を、本文のプレビューが仮想画像面側の正立を描いている。
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <div class="q">
+      <div class="q-bar"><b>問 12</b><span>4隅を使うと何が変わるか</span><span class="note">ガイド最終節</span></div>
+      <div class="q-body">
+        <p>
+          傾いたマーカーの距離と向きを正しく求めるには、辺を1本測るのをやめて4隅すべての位置を使う（<em>cv2.solvePnP</em>）。
+        </p>
+        <ol class="parts">
+          <li>4隅から立つ式の数と、未知数の数を答えよ。</li>
+          <li>式の数が未知数より多いことは、何を意味し、何の役に立つか。</li>
+        </ol>
+      </div>
+      <details class="ans">
+        <summary>解答</summary>
+        <div class="ans-body">
+          <div class="mathblock">
+            <div class="mathline">(a)　式　4 隅 × (u, v) = 8 本</div>
+            <div class="mathline">　　 未知数　回転 R が 3 + 並進 t が 3 = 6 個</div>
+          </div>
+          <p>
+            (b) 8 本の式に対して未知数は 6 個なので連立は過剰決定になる（この数え方は、キャリブレーション済みで内部パラメータと歪み係数が既知という前提のもの）。
+            検出座標にはノイズが乗るため、一般には8本すべてを同時に満たす R, t は存在しない。
+            既定の解法（SOLVEPNP_ITERATIVE）は、再投影誤差（4隅の実測位置と、R, t から計算し直した位置との差）の2乗和が最小になる解を反復的に探す。
+            solvePnP には代数的に解く方式も選べるため、この最小二乗の説明がすべての方式に当てはまるわけではない。
+          </p>
+          <p>
+            余った2本の式は、最小化しきれずに残る誤差として現れ、その大きさが検出品質の目安（外れ値や誤検出のシグナル）になる。
+            ただし正方形のような平面上の4点では、再投影誤差がほぼ同じになる姿勢の候補が2つ生じ得る（遠くて小さく写るマーカーほど起きやすい）。
+            外れ値が混じる状況では solvePnPRansac を使う。
+          </p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <footer>
+    全12問。数値設定はガイド「<a href="pinhole-camera-model.html">ピンホールの相似三角形</a>」の初期値
+    （f<sub>x</sub> = 800 px、L = 0.10 m、画像 640 × 480 px）に合わせてあり、答えの多くはガイドのスライダーを動かして再現できます。
+  </footer>
+
+</div>
+
+</body>
+</html>

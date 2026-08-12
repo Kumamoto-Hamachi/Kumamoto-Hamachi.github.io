@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ピンホールの相似三角形</title>
 <style>*{margin:0;padding:0}</style>
 </head>
 <body>
-<title>ピンホールの相似三角形</title>
 <style>
   :root {
     --ground: #E7EAEE;
@@ -527,7 +527,7 @@
       <p class="prose">
         マーカーの上端から出た光と下端から出た光は、小さな穴を通って画像面に届きます。
         このとき穴を頂点として、<strong>実物側の三角形</strong>と<strong>画像側の三角形</strong>という
-        向かい合った二つの三角形ができます。頂角が共通で底辺が平行なので、この二つは必ず相似です。
+        向かい合った二つの三角形ができます。ピンホールを挟んだ二つの頂角は対頂角として等しく、底辺が平行なので、この二つは必ず相似です。
       </p>
       <p class="prose">
         相似ということは、<strong>高さと底辺の比が両方で等しい</strong>ということ。
@@ -622,7 +622,7 @@
       <div class="side-panel">
         <div class="tbl-wrap">
           <table>
-            <caption>±1 PX の測定誤差が生む距離の誤差</caption>
+            <caption>±1 PX の測定誤差が生む距離の誤差（一次近似）</caption>
             <thead><tr><th>距離 Z</th><th>見かけ p</th><th>1 px あたり</th></tr></thead>
             <tbody id="err-body"></tbody>
           </table>
@@ -638,10 +638,11 @@
           <span class="op">·</span><span>Δp</span>
         </div>
         <p class="eq-note">
-          距離の誤差は <strong>Z の2乗</strong>で効きます。2倍遠ざかれば誤差は4倍。
+          距離の誤差は <strong>Z の2乗</strong>で効きます。同じ 1 px の誤差でも、2倍遠ざかればおよそ4倍。
           精度が欲しければマーカーを大きく印刷する（<em>L</em> を上げる）か、
-          解像度や焦点距離を上げる（<em>f<sub>x</sub></em> を上げる）しかありません。
+          解像度や焦点距離を上げる（<em>f<sub>x</sub></em> を上げる）のが基本です。
           どちらも <em>f<sub>x</sub>·L</em> という積を大きくする操作です。
+          残る手は <em>Δp</em> 自体を減らすこと——ArUco のサブピクセルコーナー補正はそのための機能です。
         </p>
       </div>
     </div>
@@ -692,12 +693,12 @@
       <h2>正対が崩れると、どの辺を測るかで答えが変わる</h2>
       <p class="prose">
         ここまでの式は<strong>マーカーがカメラに正対している</strong>ことを前提にしていました。
-        傾くとマーカーの左端と右端でカメラからの距離が変わります。すると画像上では正方形が<strong>台形</strong>になり、
+        傾くとマーカーの左端と右端で奥行き（光軸方向の距離）が変わります。すると画像上では正方形が<strong>台形</strong>になり、
         「<em>p</em> はどの辺の長さなのか」が決まらなくなります。
       </p>
       <p class="prose">
-        下の図で角度を動かしてください。単純な式に左辺の長さを入れると<strong>左端までの距離</strong>が、
-        右辺を入れると<strong>右端までの距離</strong>が返ってきます。式が壊れているのではなく、
+        下の図で角度を動かしてください。単純な式に左辺の長さを入れると<strong>左端の奥行き</strong>が、
+        右辺を入れると<strong>右端の奥行き</strong>が返ってきます。式が壊れているのではなく、
         <strong>それぞれの辺について正しく答えている</strong>だけです。
       </p>
     </div>
@@ -705,7 +706,7 @@
     <div class="fig">
       <div class="fig-bar">
         <b>FIG. 3</b><span>傾いたマーカー — 上から見た図</span>
-        <span class="note">Z = 1.000 m ・ L = 0.100 m ・ f<sub>x</sub> = 800 px に固定／縦横は等倍</span>
+        <span class="note">Z = 1.000 m ・ L = 0.100 m ・ f<sub>x</sub> = 800 px に固定／縦横は等倍／端の値は光軸方向の奥行き</span>
       </div>
       <div class="fig-body"><div class="svg-min-680" id="topview"></div></div>
       <div class="fig-body">
@@ -743,7 +744,8 @@
 
     <p class="callout">
       <b>横幅で測ると本当に間違えます。</b>
-      縦の辺は傾けても実寸 <em>L</em> のままですが、横幅は <em>L·cos θ</em> に縮んで写ります。
+      縦の辺は傾けても実寸 <em>L</em> のままですが、横幅はほぼ <em>L·cos θ</em> に縮んで写ります
+      （厳密には左右端の奥行きの差も画像上の幅にわずかに効きます。上の表はその厳密な計算値です）。
       その縮んだ長さを実寸だと思って式に入れるので、<strong>実際より遠い</strong>という答えが返ってきます。
       式の限界ではなく、前提（正対）を破ったことの帰結です。
     </p>
@@ -770,7 +772,7 @@
       <div class="close-cell">
         <span class="k">相似三角形</span>
         <span class="v">p / f<sub>x</sub> = L / Z</span>
-        <p>正対のときだけ成立。距離だけ知りたいならこれで十分です。</p>
+        <p>奥行きが一定の辺について成立。マーカー全体の距離を代表させるには正対が必要です。</p>
       </div>
       <div class="close-cell">
         <span class="k">透視投影</span>
@@ -787,7 +789,8 @@
     <footer>
       数値はすべてページ内でリアルタイムに計算しています。
       画像座標は OpenCV の規約（原点は左上、u は右向き、v は下向き）に従い、
-      主点は c<sub>x</sub> = 320, c<sub>y</sub> = 240、レンズ歪みはゼロとしています。
+      主点は c<sub>x</sub> = 320, c<sub>y</sub> = 240、レンズ歪みはゼロ、画素は正方（f<sub>x</sub> = f<sub>y</sub>）としています。
+      Z は正確にはカメラ座標系での光軸方向の奥行きですが、このページではマーカー中心を光軸上に置いているため、カメラからマーカー中心までの距離と一致します。
     </footer>
   </section>
 
@@ -917,11 +920,11 @@
       '<svg viewBox="-412 -230 1002 490" role="img" aria-label="ピンホールを頂点として実物側と画像側にできる二つの相似三角形の側面図">' + g + '</svg>';
   }
 
-  // ---------- ArUco bitmap: 1-cell black border + 4x4 payload ----------
+  // ---------- ArUco bitmap: 1-cell black border + DICT_4X4_50 id 0 payload (1 = white) ----------
   var BITS = [
     [1, 0, 1, 1],
-    [0, 1, 1, 0],
-    [1, 1, 0, 1],
+    [0, 1, 0, 1],
+    [0, 0, 1, 1],
     [0, 0, 1, 0]
   ];
 
@@ -1045,7 +1048,7 @@
       var w = Math.max(xb - xa, 1.5);
       g += '<rect class="f-ray" opacity="0.8" x="' + n(xa, 1) + '" y="' + (band - 6) + '" width="' + n(w, 1) + '" height="12"/>';
       g += '<text class="t-small" x="' + n((xa + xb) / 2, 1) + '" y="' + (band + 26) + '" text-anchor="middle">±' +
-             n((zhi - zlo) / 2 * 100, 1) + ' cm</text>';
+             n(zs * zs / K * 100, 1) + ' cm</text>';
     }
 
     el('curve').innerHTML =
@@ -1176,11 +1179,11 @@
     }
 
     el('tilt-body').innerHTML =
-      row('左辺（縦）', '#C26C15', pL, zL, '<span class="good">左端までの距離 ' + n(TZ + s * h, 3) + ' m に一致</span>') +
-      row('右辺（縦）', '#2E7D9A', pR, zR, '<span class="good">右端までの距離 ' + n(TZ - s * h, 3) + ' m に一致</span>') +
+      row('左辺（縦）', '#C26C15', pL, zL, '<span class="good">左端の奥行き ' + n(TZ + s * h, 3) + ' m に一致</span>') +
+      row('右辺（縦）', '#2E7D9A', pR, zR, '<span class="good">右端の奥行き ' + n(TZ - s * h, 3) + ' m に一致</span>') +
       row('上辺（横）', null, pT, zT,
         (Math.abs(errT) < 0.05
-          ? '<span class="good">中心までの距離に一致</span>'
+          ? '<span class="good">中心の奥行きに一致</span>'
           : '<span class="bad">どこの距離でもない — 真値より ' + n(errT, 1) + ' % 遠い</span>'));
   }
 

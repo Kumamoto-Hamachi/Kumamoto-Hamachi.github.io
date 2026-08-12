@@ -1,0 +1,1320 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>カメラ内部パラメータ</title>
+<style>
+  :root {
+    --ground: #E7EAEE;
+    --surface: #F1F3F6;
+    --panel: #FDFDFE;
+    --ink: #151A22;
+    --ink-2: #454F5E;
+    --muted: #78828F;
+    --line: #C6CCD5;
+    --line-soft: #DDE1E7;
+    --ray: #C26C15;
+    --tri: #2E7D9A;
+    --warn: #AC403A;
+    --ok: #3F7A52;
+
+    --mincho: "Hiragino Mincho ProN", "HiraMinProN-W3", "Yu Mincho", YuMincho, "Noto Serif CJK JP", "Noto Serif JP", "Source Han Serif JP", "Songti SC", serif;
+    --gothic: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans CJK JP", "Noto Sans JP", "Yu Gothic", YuGothic, Meiryo, system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Code", "Roboto Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #10141A;
+      --surface: #161B23;
+      --panel: #1B212A;
+      --ink: #E4E9F0;
+      --ink-2: #AAB4C2;
+      --muted: #7C8695;
+      --line: #333C48;
+      --line-soft: #262E39;
+      --ray: #EFA85C;
+      --tri: #5AB2CE;
+      --warn: #E07A72;
+      --ok: #74B98C;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #10141A;
+    --surface: #161B23;
+    --panel: #1B212A;
+    --ink: #E4E9F0;
+    --ink-2: #AAB4C2;
+    --muted: #7C8695;
+    --line: #333C48;
+    --line-soft: #262E39;
+    --ray: #EFA85C;
+    --tri: #5AB2CE;
+    --warn: #E07A72;
+    --ok: #74B98C;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--gothic);
+    font-size: 15px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1140px;
+    margin-inline: auto;
+    padding: clamp(28px, 5vw, 64px) clamp(16px, 4vw, 40px) 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 76px;
+  }
+
+  /* ---------- header ---------- */
+
+  header { display: flex; flex-direction: column; gap: 20px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  h1 {
+    font-family: var(--mincho);
+    font-weight: 600;
+    font-size: clamp(30px, 5.2vw, 46px);
+    line-height: 1.3;
+    letter-spacing: .02em;
+    text-wrap: balance;
+  }
+
+  .lede { max-width: 40em; color: var(--ink-2); }
+  .lede em, .prose em, .callout em, .eq-note em, .term em {
+    font-style: normal; font-family: var(--mono); font-size: .94em;
+  }
+
+  .hero-eq {
+    display: flex;
+    align-items: center;
+    gap: 34px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 24px 4px;
+  }
+
+  /* ---------- sections ---------- */
+
+  section { display: flex; flex-direction: column; gap: 26px; }
+
+  h2 {
+    font-family: var(--mincho);
+    font-weight: 600;
+    font-size: clamp(21px, 3vw, 27px);
+    line-height: 1.5;
+    letter-spacing: .02em;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--mincho);
+    font-size: clamp(17px, 2.4vw, 21px);
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .sec-head { display: flex; flex-direction: column; gap: 12px; }
+
+  .prose { max-width: 40em; color: var(--ink-2); }
+  .prose strong, .lede strong, .callout b, .term strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- matrices & equations ---------- */
+
+  .mat {
+    display: inline-grid;
+    gap: .12em .75em;
+    padding: .42em .6em;
+    position: relative;
+    vertical-align: middle;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.45;
+  }
+  .mat::before, .mat::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0;
+    width: .42em;
+    border: 1.5px solid var(--ink-2);
+  }
+  .mat::before { left: 0; border-right: none; }
+  .mat::after  { right: 0; border-left: none; }
+  .mat.c3 { grid-template-columns: repeat(3, auto); }
+  .mat.c1 { grid-template-columns: auto; }
+  .mat.c2 { grid-template-columns: repeat(2, auto); }
+  .mat > span { text-align: center; }
+
+  .matrow {
+    display: flex;
+    align-items: center;
+    gap: .55em;
+    flex-wrap: nowrap;
+    font-family: var(--mono);
+    font-size: clamp(12.5px, 1.8vw, 15px);
+    overflow-x: auto;
+    padding: 4px 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .matrow .op { color: var(--muted); flex-shrink: 0; }
+
+  .eq {
+    font-family: var(--mono);
+    font-size: clamp(15px, 2.2vw, 19px);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .45em;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+  }
+  .eq .op { color: var(--muted); }
+  .eq .res { color: var(--ray); font-weight: 700; }
+
+  .frac {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: middle;
+    line-height: 1.25;
+  }
+  .frac > .n { padding: 0 .5em .12em; border-bottom: 1.5px solid currentColor; }
+  .frac > .d { padding: .12em .5em 0; }
+
+  .cK { color: var(--ray); font-weight: 600; }
+  .cP { color: var(--tri); font-weight: 600; }
+
+  /* ---------- figure panel ---------- */
+
+  .fig { background: var(--panel); border: 1px solid var(--line); }
+
+  .fig-bar {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--surface);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    color: var(--muted);
+  }
+  .fig-bar b { color: var(--ink-2); font-weight: 600; letter-spacing: .14em; }
+  .fig-bar .note { margin-left: auto; letter-spacing: .04em; }
+
+  .fig-body { padding: 18px 16px; overflow-x: auto; }
+  .fig-body + .fig-body { border-top: 1px solid var(--line-soft); }
+
+  svg { display: block; width: 100%; height: auto; }
+  svg text { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ---------- pipeline ---------- */
+
+  .pipe {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 4px 2px;
+  }
+  .pipe-box {
+    flex: 0 0 auto;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    padding: 13px 18px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .pipe-box .unit { color: var(--muted); font-size: 11px; letter-spacing: .06em; }
+  .pipe-box.hot { border-color: var(--ray); border-width: 1.5px; }
+  .pipe-arrow {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 2px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ray);
+    font-weight: 600;
+    padding: 0 2px;
+  }
+  .pipe-arrow .sub { color: var(--muted); font-weight: 400; font-size: 10.5px; letter-spacing: .06em; }
+  .pipe-arrow .ar { font-size: 17px; }
+
+  /* ---------- controls ---------- */
+
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px 28px;
+    border-top: 1px solid var(--line-soft);
+    padding: 16px;
+  }
+
+  .ctrl { display: flex; flex-direction: column; gap: 5px; }
+
+  .ctrl-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .ctrl-head .nm { color: var(--ink-2); letter-spacing: .04em; }
+  .ctrl-head .vl { color: var(--ink); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 22px;
+    background: transparent;
+    cursor: ew-resize;
+  }
+  input[type="range"]::-webkit-slider-runnable-track { height: 2px; background: var(--line); }
+  input[type="range"]::-moz-range-track { height: 2px; background: var(--line); }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 13px; height: 13px; margin-top: -5.5px;
+    background: var(--ray); border: none; border-radius: 0;
+    transform: rotate(45deg);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 12px; height: 12px;
+    background: var(--ray); border: none; border-radius: 0;
+  }
+  input[type="range"]:focus-visible { outline: 2px solid var(--ray); outline-offset: 3px; }
+
+  .ctrl-scale {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-top: -3px;
+  }
+
+  /* ---------- readout ---------- */
+
+  .readout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 18px;
+    align-items: stretch;
+  }
+  @media (max-width: 780px) { .readout { grid-template-columns: 1fr; } }
+
+  .eqbox {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 24px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    justify-content: center;
+  }
+
+  .eq-note { font-size: 13.5px; color: var(--ink-2); line-height: 1.8; font-family: var(--gothic); }
+  .eq-note strong { color: var(--ink-2); font-weight: 600; }
+
+  .side-panel { background: var(--panel); border: 1px solid var(--line); padding: 18px 18px 14px; }
+
+  /* ---------- table ---------- */
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  caption {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .12em;
+    color: var(--muted);
+    padding-bottom: 10px;
+  }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  thead th {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600; letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+  }
+  tbody td.sym { font-family: var(--mono); color: var(--ink); font-weight: 600; white-space: nowrap; }
+  tbody td.unit { font-family: var(--mono); color: var(--muted); white-space: nowrap; }
+  tbody td { color: var(--ink-2); }
+  tbody tr:last-child td { border-bottom: none; }
+  .tbl-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); padding: 18px; }
+
+  /* ---------- step blocks ---------- */
+
+  .step-block {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: clamp(20px, 4vw, 32px);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .step-block .label {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .12em;
+  }
+
+  .step-block p { max-width: 46em; color: var(--ink-2); font-size: 14px; }
+
+  .mathline {
+    overflow-x: auto;
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: clamp(12.5px, 1.8vw, 14.5px);
+    line-height: 2.0;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .mathline .approx, .mathline .hl { color: var(--ray); font-weight: 600; }
+  .mathline .cm { color: var(--muted); }
+
+  /* ---------- callout ---------- */
+
+  .callout {
+    border-left: 2px solid var(--ray);
+    padding: 3px 0 3px 18px;
+    max-width: 40em;
+    color: var(--ink-2);
+    font-size: 14px;
+  }
+
+  /* ---------- closing ---------- */
+
+  .close-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  .close-cell { background: var(--panel); padding: 20px 18px; display: flex; flex-direction: column; gap: 9px; }
+  .close-cell .k { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--muted); }
+  .close-cell .v { font-family: var(--mono); font-size: 14.5px; color: var(--ray); font-weight: 600; }
+  .close-cell p { font-size: 13.5px; color: var(--ink-2); line-height: 1.75; }
+
+  code {
+    font-family: var(--mono);
+    font-size: .92em;
+    background: var(--surface);
+    border: 1px solid var(--line-soft);
+    padding: .1em .4em;
+  }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--line-soft);
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.8;
+    max-width: 46em;
+  }
+  pre code { background: none; border: none; padding: 0; }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 42em;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 26px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+  .swatch { display: inline-block; width: 9px; height: 9px; margin-right: 9px; vertical-align: middle; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Camera intrinsics / OpenCV calibration</div>
+    <h1>カメラ内部パラメータ</h1>
+    <p class="lede">
+      前のページの締めくくりに <em>u = f<sub>x</sub>·X<sub>c</sub>/Z<sub>c</sub> + c<sub>x</sub></em> という式が顔を出しました。
+      ここでは、この式に出てくる数の素性を一つずつ確かめ、それらが 3×3 の行列 <em>K</em> に組み上がるまでを、
+      途中の計算を省かずに追いかけます。
+      ゴールは、OpenCV のキャリブレーションが返す <em>cameraMatrix</em> と <em>distCoeffs</em> の中身を、見て意味が分かる状態になることです。
+    </p>
+    <div class="hero-eq">
+      <div class="matrow" style="font-size:clamp(14px,2vw,17px)">
+        <span>K</span><span class="op">=</span>
+        <span class="mat c3">
+          <span class="cK">f<sub>x</sub></span><span>0</span><span class="cK">c<sub>x</sub></span>
+          <span>0</span><span class="cK">f<sub>y</sub></span><span class="cK">c<sub>y</sub></span>
+          <span>0</span><span>0</span><span>1</span>
+        </span>
+      </div>
+      <div class="eq-note" style="max-width:36ch">
+        9 個のマスのうち、実際に意味を持つ数は
+        <em>f<sub>x</sub>, f<sub>y</sub>, c<sub>x</sub>, c<sub>y</sub></em> の 4 つだけ。
+        このページを読み終えると、この 4 つの役割がすべて説明できるようになります。
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ 1 記号の一覧 ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>記号の一覧</h2>
+      <p class="prose">
+        このページで使う文字を先にすべて並べます。
+        初めて読むときは眺めるだけでかまいません。
+        読み進めて文字の意味を見失ったら、ここに戻ってください。
+        それぞれの詳しい説明は、本文の該当する節で行います。
+      </p>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>記号</th><th>名前</th><th>単位</th><th>意味</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="sym">(X, Y, Z)</td><td>世界座標</td><td class="unit">m</td>
+            <td>カメラとは無関係に自分で決めた基準で測った、点の 3D 位置</td></tr>
+          <tr><td class="sym">(X<sub>c</sub>, Y<sub>c</sub>, Z<sub>c</sub>)</td><td>カメラ座標</td><td class="unit">m</td>
+            <td>カメラのレンズ中心を原点として測った、同じ点の 3D 位置</td></tr>
+          <tr><td class="sym">R, t</td><td>回転行列と並進ベクトル</td><td class="unit">R なし / t m</td>
+            <td>世界座標をカメラ座標に書き換える回転と平行移動（外部パラメータ）</td></tr>
+          <tr><td class="sym">(x′, y′)</td><td>正規化画像座標</td><td class="unit">なし</td>
+            <td>カメラ座標を奥行き Z<sub>c</sub> で割った比。ピクセルに直す前の中間形</td></tr>
+          <tr><td class="sym">(x″, y″)</td><td>歪み適用後の正規化画像座標</td><td class="unit">なし</td>
+            <td>レンズ歪みの分だけ (x′, y′) からずらした後の比</td></tr>
+          <tr><td class="sym">(u, v)</td><td>ピクセル座標</td><td class="unit">px</td>
+            <td>画像の左上を (0, 0) とし、右に u、下に v と数えた画素の位置</td></tr>
+          <tr><td class="sym">f<sub>x</sub>, f<sub>y</sub></td><td>焦点距離（ピクセル単位）</td><td class="unit">px</td>
+            <td>正規化画像座標をピクセル数に直す、横方向と縦方向の拡大率</td></tr>
+          <tr><td class="sym">(c<sub>x</sub>, c<sub>y</sub>)</td><td>主点</td><td class="unit">px</td>
+            <td>カメラの光軸が画像面を貫く位置。ほぼ画像中心</td></tr>
+          <tr><td class="sym">K</td><td>カメラ行列（内部パラメータ行列）</td><td class="unit">—</td>
+            <td>f<sub>x</sub>, f<sub>y</sub>, c<sub>x</sub>, c<sub>y</sub> を 1 つにまとめた 3×3 行列</td></tr>
+          <tr><td class="sym">k<sub>1</sub>, k<sub>2</sub>, k<sub>3</sub></td><td>放射歪み係数</td><td class="unit">なし</td>
+            <td>レンズによる、中心からの距離に応じた歪みの強さ</td></tr>
+          <tr><td class="sym">p<sub>1</sub>, p<sub>2</sub></td><td>接線歪み係数</td><td class="unit">なし</td>
+            <td>レンズとセンサの取り付けの傾きによる歪みの強さ</td></tr>
+          <tr><td class="sym">r</td><td>中心からの距離</td><td class="unit">なし</td>
+            <td>正規化画像座標で測った光軸中心からの距離。r² = x′² + y′²</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 2 座標系 ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>三つの座標系と二種類のパラメータ</h2>
+      <p class="prose">
+        「3D の点が写真のどのピクセルに写るか」という計算は、同じ点の住所を三つの座標系で順に書き換えていく旅です。
+        まず、その三つを紹介します。
+      </p>
+      <p class="prose">
+        <strong>世界座標系</strong>とは、カメラとは無関係に自分で決めた基準で 3D の位置を測る座標系です。
+        基準はどこでもかまいません。部屋の隅を原点にしてもよいし、机に貼ったマーカーの中心を原点にしてもよい
+        （ArUco の姿勢推定では、マーカー中心を原点に取るのが習慣です）。
+        「世界」という大げさな名前がついていますが、意味するところは
+        「カメラの外に固定した、全員が共有するものさし」というだけのことです。
+      </p>
+      <p class="prose">
+        <strong>カメラ座標系</strong>は、カメラのレンズ中心（ピンホール）を原点として、カメラから見た向きで測る 3D 座標系です。
+        OpenCV では、カメラから見て右に X<sub>c</sub>、下に Y<sub>c</sub>、レンズが向く前方に Z<sub>c</sub> を取ります。
+        Y<sub>c</sub> が下向きなのは、画像のピクセル座標が下向きに増えるのと軸の向きを揃えるためです。
+        前のページで「マーカーまでの距離」と呼んでいた Z は、この Z<sub>c</sub> のことでした。
+      </p>
+      <p class="prose">
+        <strong>ピクセル座標</strong>は、画像の左上隅を (0, 0) として、右に u、下に v と画素を数えた 2D の座標です。
+        画素の番号は 0 始まりなので、640×480 の画像では u は 0〜639、v は 0〜479 の値を取ります。
+        また、検出結果の (u, v) は画素と画素の間を指すことがあるので、整数とは限りません。
+      </p>
+    </div>
+
+    <div class="fig">
+      <div class="fig-bar"><b>FIG. 1</b><span>点の住所が書き換わっていく旅</span></div>
+      <div class="fig-body">
+        <div class="pipe">
+          <div class="pipe-box">世界座標<br>(X, Y, Z)<span class="unit">単位 m ・ 3D</span></div>
+          <div class="pipe-arrow"><span class="ar">→</span><span>R, t</span><span class="sub">外部パラメータ</span></div>
+          <div class="pipe-box">カメラ座標<br>(X<sub>c</sub>, Y<sub>c</sub>, Z<sub>c</sub>)<span class="unit">単位 m ・ 3D</span></div>
+          <div class="pipe-arrow"><span class="ar">→</span><span>f<sub>x</sub>, f<sub>y</sub>, c<sub>x</sub>, c<sub>y</sub>, 歪み係数</span><span class="sub">内部パラメータ（このページ）</span></div>
+          <div class="pipe-box hot">ピクセル座標<br>(u, v)<span class="unit">単位 px ・ 2D</span></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="prose">
+      最初の矢印、世界座標からカメラ座標への書き換えを受け持つのが、回転行列 <em>R</em> と並進ベクトル <em>t</em> です。
+      書き換えは「R を掛けて軸の向きを揃え、t を足して原点をずらす」という形で行われます。
+      式で書くと <em>(X<sub>c</sub>, Y<sub>c</sub>, Z<sub>c</sub>) = R·(X, Y, Z) + t</em> で、
+      この R と t を合わせて<strong>外部パラメータ</strong>と呼びます。
+      カメラを三脚ごと動かせば R と t は変わります。
+    </p>
+    <p class="prose">
+      注意したいのは、<strong>t は「カメラの位置」そのものではない</strong>ことです。
+      上の式に世界座標の原点 (X, Y, Z) = (0, 0, 0) を入れると、R·(0, 0, 0) は 0 なので答えは t そのもの。
+      つまり t は「世界座標の原点を、カメラから見た位置」です。
+      逆に、カメラ自身が世界座標のどこにいるかは −R<sup>T</sup>t という式で逆算します
+      （R<sup>T</sup> は R の行と列を入れ替えた「転置行列」です）。
+      solvePnP の結果を読むときに取り違えやすい点なので、先にここで区別しておきます。
+    </p>
+    <p class="prose">
+      一方、二番目の矢印を受け持つ f<sub>x</sub>, f<sub>y</sub>, c<sub>x</sub>, c<sub>y</sub> と歪み係数は、
+      レンズとセンサの作りだけで決まる数なので、カメラをどこへ動かしても変わりません。
+      カメラの置き場所という「外側」の事情で決まるのが外部パラメータ、
+      カメラの構造という「内側」の事情で決まるのが<strong>内部パラメータ</strong>。名前の由来はこの対比にあります。
+      ただし「変わらない」のは置き場所についての話です。
+      ズームやフォーカスを回せばレンズの状態が変わり、出力解像度を切り替えれば 1 画素の実質的な大きさが変わるので、
+      そのたびに内部パラメータは別の値になります（キャリブレーションもやり直しです）。
+    </p>
+    <p class="callout">
+      <b>このページの主役は二番目の矢印です。</b>
+      以降の計算はすべてカメラ座標 (X<sub>c</sub>, Y<sub>c</sub>, Z<sub>c</sub>) から出発します。
+      R と t の求め方（solvePnP）は、キャリブレーションを理解した後の話題です。
+    </p>
+  </section>
+
+  <!-- ============ 3 線形代数ミニ講座 ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>行列とベクトルの掛け算</h2>
+      <p class="prose">
+        K の話に入る前に、道具を一つだけ準備します。
+        必要な線形代数は「行列とベクトルの掛け算」ただ一つで、規則さえ知れば手計算できます。
+      </p>
+      <p class="prose">
+        <strong>ベクトル</strong>とは、いくつかの数を縦に一列に並べてひとまとめにしたものです。
+        3D の点の位置は「3 つの数を縦に並べたベクトル」として書けます。
+        <strong>行列</strong>とは、数を長方形の表の形に並べたものです。
+        このページで使うのは 3 行 3 列の行列だけです。
+      </p>
+      <p class="prose">
+        行列とベクトルの掛け算には決まった手順があります。
+        <strong>行列の行を左から右へ読みながら、ベクトルの上から下の成分と順番にペアで掛けて、全部足す</strong>。
+        これを行ごとに繰り返すと、行の数だけ答えが出て、新しいベクトルができます。
+      </p>
+    </div>
+
+    <div class="step-block">
+      <span class="label">練習 1 — 2×2 で手順を確認する</span>
+      <p>
+        1 行目の (2, 3) とベクトルの (10, 20) をペアで掛けて足すと 1 つ目の答え、
+        2 行目の (1, 0) と同じ (10, 20) で 2 つ目の答えが出ます。
+      </p>
+      <div class="matrow">
+        <span class="mat c2"><span>2</span><span>3</span><span>1</span><span>0</span></span>
+        <span class="mat c1"><span>10</span><span>20</span></span>
+        <span class="op">=</span>
+        <span class="mat c1"><span>2×10 + 3×20</span><span>1×10 + 0×20</span></span>
+        <span class="op">=</span>
+        <span class="mat c1"><span>20 + 60</span><span>10 + 0</span></span>
+        <span class="op">=</span>
+        <span class="mat c1"><span>80</span><span>10</span></span>
+      </div>
+    </div>
+
+    <div class="step-block">
+      <span class="label">練習 2 — K と同じ形の 3×3</span>
+      <p>
+        次は、後で出てくる K とまったく同じ位置に 0 と 1 を置いた行列です。手順は変わりません。
+      </p>
+      <div class="matrow">
+        <span class="mat c3">
+          <span>2</span><span>0</span><span>3</span>
+          <span>0</span><span>2</span><span>1</span>
+          <span>0</span><span>0</span><span>1</span>
+        </span>
+        <span class="mat c1"><span>10</span><span>20</span><span>1</span></span>
+        <span class="op">=</span>
+        <span class="mat c1">
+          <span>2×10 + 0×20 + 3×1</span>
+          <span>0×10 + 2×20 + 1×1</span>
+          <span>0×10 + 0×20 + 1×1</span>
+        </span>
+        <span class="op">=</span>
+        <span class="mat c1"><span>20 + 0 + 3</span><span>0 + 40 + 1</span><span>0 + 0 + 1</span></span>
+        <span class="op">=</span>
+        <span class="mat c1"><span>23</span><span>41</span><span>1</span></span>
+      </div>
+      <p>
+        0 のマスは相手の成分を消し、1 のマスは相手をそのまま通します。
+        1 行目を言葉にすると「1 つ目の成分を 2 倍して、3 を足す」。
+        つまりこの行列は、<strong>拡大（掛け算）と平行移動（足し算）を一度に実行する機械</strong>です。
+        K の中に 0 と 1 が多いのは手抜きではなく、必要な操作がこれだけだからです。
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ 4 三つのステップ ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>ピクセル座標までの三つのステップ</h2>
+      <p class="prose">
+        カメラ座標の点 (X<sub>c</sub>, Y<sub>c</sub>, Z<sub>c</sub>) をピクセル座標 (u, v) に変える計算は、
+        「割る」「掛ける」「足す」の三つのステップに分解できます。
+        一つずつ、数値を入れて確かめます。
+        例として使うのは、<span class="cP">カメラの 0.5 m 先に正対して置いた一辺 0.1 m のマーカーの右下の隅</span>、
+        カメラ座標で (X<sub>c</sub>, Y<sub>c</sub>, Z<sub>c</sub>) = (0.05, 0.05, 0.5) です
+        （Y<sub>c</sub> は下向きが正なので、下の隅は符号がプラスになります）。
+      </p>
+    </div>
+
+    <div class="step-block">
+      <span class="label">STEP 1 — 奥行きで割る</span>
+      <h3>正規化画像座標</h3>
+      <p>
+        前のページの相似三角形は「画像上の位置は、横のずれと奥行きの比で決まる」と言っていました。
+        そこでまず、X<sub>c</sub> と Y<sub>c</sub> をそれぞれ奥行き Z<sub>c</sub> で割ってしまいます。
+      </p>
+      <div class="mathline">x′ = X<sub>c</sub> / Z<sub>c</sub> = 0.05 / 0.5 = <span class="hl">0.1</span></div>
+      <div class="mathline">y′ = Y<sub>c</sub> / Z<sub>c</sub> = 0.05 / 0.5 = <span class="hl">0.1</span></div>
+      <p>
+        この (x′, y′) を<strong>正規化画像座標</strong>と呼びます。
+        ピンホールからちょうど距離 1 の位置に仮想のスクリーンを置いたとき、点が写る場所に当たります。
+        メートルをメートルで割ったので単位は消えており、カメラの解像度にも機種にも依存しない純粋な比です。
+        レンズ歪みの計算（後述）は、この座標の上で行われます。
+      </p>
+    </div>
+
+    <div class="step-block">
+      <span class="label">STEP 2 — f<sub>x</sub> を掛ける</span>
+      <h3>比をピクセル数に直す</h3>
+      <p>
+        正規化画像座標はただの比なので、画素の数に換算する拡大率が要ります。
+        それが<strong>焦点距離（ピクセル単位）</strong>の f<sub>x</sub> と f<sub>y</sub> です。
+        f<sub>x</sub> = 800 px とは「正規化座標の 1 が 800 ピクセルに相当する」という換算率のことです。
+      </p>
+      <div class="mathline">f<sub>x</sub> · x′ = 800 × 0.1 = <span class="hl">80</span> <span class="cm">（光軸から右に 80 px）</span></div>
+      <div class="mathline">f<sub>y</sub> · y′ = 800 × 0.1 = <span class="hl">80</span> <span class="cm">（光軸から下に 80 px）</span></div>
+      <p>
+        この数はレンズとセンサの物理から来ています。
+        レンズの焦点距離（ここでは物理的な長さの方）を f = 3.6 mm、センサの画素 1 個の幅を 4.5 µm = 0.0045 mm とすると、
+      </p>
+      <div class="mathline">f<sub>x</sub> = f ÷ 画素 1 個の幅 = 3.6 ÷ 0.0045 = <span class="hl">800 px</span></div>
+      <p>
+        f<sub>x</sub> と f<sub>y</sub> が別々に用意されているのは、画素が縦横で完全に同じ寸法とは限らないからです。
+        現代のセンサの画素はほぼ正方形なので、キャリブレーションの結果でも両者は近い値になります
+        （実測で 800.3 と 801.1 のように微差が出るのが普通です）。
+      </p>
+    </div>
+
+    <div class="step-block">
+      <span class="label">STEP 3 — c<sub>x</sub>, c<sub>y</sub> を足す</span>
+      <h3>原点を画像の左上へ引っ越す</h3>
+      <p>
+        f<sub>x</sub>·x′ = 80 は「光軸の位置から右に 80 px」という、光軸を 0 とした位置です。
+        ところがピクセル座標の原点は画像の左上隅でした。
+        そこで、光軸が画像を貫く位置を足して、原点を左上基準に引っ越します。
+        この「光軸が画像面を貫く点」を<strong>主点</strong>と呼び、その座標が (c<sub>x</sub>, c<sub>y</sub>) です。
+      </p>
+      <div class="mathline">u = f<sub>x</sub> · x′ + c<sub>x</sub> = 80 + 320 = <span class="hl">400</span></div>
+      <div class="mathline">v = f<sub>y</sub> · y′ + c<sub>y</sub> = 80 + 240 = <span class="hl">320</span></div>
+      <p>
+        640×480 の画像なら主点はほぼ中央の (320, 240) ですが、
+        レンズの取り付けにはわずかな個体差があるため、実測すると中央から数ピクセルずれているのが普通です。
+        このずれも含めて測ることが、キャリブレーションの仕事の一つです。
+      </p>
+    </div>
+
+    <div class="step-block">
+      <span class="label">まとめ — 三つのステップを一本の式に</span>
+      <p>三つを続けて書くと、前のページの締めに出てきた式そのものになります。</p>
+      <div class="mathline">u = f<sub>x</sub> · X<sub>c</sub> / Z<sub>c</sub> + c<sub>x</sub></div>
+      <div class="mathline">　 = 800 × 0.05 / 0.5 + 320</div>
+      <div class="mathline">　 = 40 / 0.5 + 320</div>
+      <div class="mathline">　 = 80 + 320</div>
+      <div class="mathline">　 = <span class="hl">400</span></div>
+      <div class="mathline" style="margin-top:10px">v = f<sub>y</sub> · Y<sub>c</sub> / Z<sub>c</sub> + c<sub>y</sub></div>
+      <div class="mathline">　 = 800 × 0.05 / 0.5 + 240</div>
+      <div class="mathline">　 = 40 / 0.5 + 240</div>
+      <div class="mathline">　 = 80 + 240</div>
+      <div class="mathline">　 = <span class="hl">320</span></div>
+      <p>
+        マーカーの右下の隅は、ピクセル座標 (400, 320) に写ります。
+        画像中心 (320, 240) から右下に 80 px ずつずれた位置です。
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ 5 行列 K ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>三つのステップを行列 K にまとめる</h2>
+      <p class="prose">
+        三つのステップのうち「掛ける」と「足す」は、練習 2 で見たとおり、行列の掛け算が一度に実行できる形です。
+        残る問題は「割る」で、割り算は行列の掛け算では表現できません。
+        そこで、<strong>割り算を最後まで先送りする</strong>という約束を作ります。
+      </p>
+      <p class="prose">
+        手順はこうです。
+        まだ Z<sub>c</sub> で割っていない 3 つの数を行列で一度に作っておき、
+        最後に「3 番目の成分で全体を割って、3 番目を 1 に直す」。
+        すると 1 番目と 2 番目が、求めたかった u と v になっています。
+        このように「3 つの数の組は、全体を何倍かしても同じ点を表す」と約束したうえで、
+        3 番目で割って (u, v, 1) の形に整えてから読む書き方を<strong>同次座標</strong>と呼びます。
+        名前は仰々しいですが、実体は「割り算を後回しにするための書き方」です。
+      </p>
+    </div>
+
+    <div class="step-block">
+      <span class="label">記号のまま展開する</span>
+      <p>
+        K とカメラ座標のベクトルを、練習 2 と同じ手順で掛けます。行ごとにペアで掛けて足すだけです。
+      </p>
+      <div class="matrow">
+        <span class="mat c3">
+          <span class="cK">f<sub>x</sub></span><span>0</span><span class="cK">c<sub>x</sub></span>
+          <span>0</span><span class="cK">f<sub>y</sub></span><span class="cK">c<sub>y</sub></span>
+          <span>0</span><span>0</span><span>1</span>
+        </span>
+        <span class="mat c1"><span class="cP">X<sub>c</sub></span><span class="cP">Y<sub>c</sub></span><span class="cP">Z<sub>c</sub></span></span>
+        <span class="op">=</span>
+        <span class="mat c1">
+          <span><span class="cK">f<sub>x</sub></span>·<span class="cP">X<sub>c</sub></span> + 0·<span class="cP">Y<sub>c</sub></span> + <span class="cK">c<sub>x</sub></span>·<span class="cP">Z<sub>c</sub></span></span>
+          <span>0·<span class="cP">X<sub>c</sub></span> + <span class="cK">f<sub>y</sub></span>·<span class="cP">Y<sub>c</sub></span> + <span class="cK">c<sub>y</sub></span>·<span class="cP">Z<sub>c</sub></span></span>
+          <span>0·<span class="cP">X<sub>c</sub></span> + 0·<span class="cP">Y<sub>c</sub></span> + 1·<span class="cP">Z<sub>c</sub></span></span>
+        </span>
+        <span class="op">=</span>
+        <span class="mat c1">
+          <span><span class="cK">f<sub>x</sub></span><span class="cP">X<sub>c</sub></span> + <span class="cK">c<sub>x</sub></span><span class="cP">Z<sub>c</sub></span></span>
+          <span><span class="cK">f<sub>y</sub></span><span class="cP">Y<sub>c</sub></span> + <span class="cK">c<sub>y</sub></span><span class="cP">Z<sub>c</sub></span></span>
+          <span><span class="cP">Z<sub>c</sub></span></span>
+        </span>
+      </div>
+      <p>
+        3 行目に (0, 0, 1) を置いた理由がここで分かります。
+        <strong>3 番目の成分として奥行き Z<sub>c</sub> をそのまま保存しておく</strong>ためです。
+        最後に 3 番目で割ると、1 行目は f<sub>x</sub>X<sub>c</sub>/Z<sub>c</sub> + c<sub>x</sub>、
+        つまり STEP 1〜3 の式と一致します。
+      </p>
+    </div>
+
+    <div class="step-block">
+      <span class="label">数値で展開する — 同じ点 (0.05, 0.05, 0.5)</span>
+      <div class="matrow">
+        <span class="mat c3">
+          <span class="cK">800</span><span>0</span><span class="cK">320</span>
+          <span>0</span><span class="cK">800</span><span class="cK">240</span>
+          <span>0</span><span>0</span><span>1</span>
+        </span>
+        <span class="mat c1"><span class="cP">0.05</span><span class="cP">0.05</span><span class="cP">0.5</span></span>
+        <span class="op">=</span>
+        <span class="mat c1">
+          <span>800×0.05 + 0×0.05 + 320×0.5</span>
+          <span>0×0.05 + 800×0.05 + 240×0.5</span>
+          <span>0×0.05 + 0×0.05 + 1×0.5</span>
+        </span>
+        <span class="op">=</span>
+        <span class="mat c1"><span>40 + 0 + 160</span><span>0 + 40 + 120</span><span>0 + 0 + 0.5</span></span>
+        <span class="op">=</span>
+        <span class="mat c1"><span>200</span><span>160</span><span>0.5</span></span>
+      </div>
+      <p>3 番目の成分 0.5（= 保存されていた Z<sub>c</sub>）で全体を割ります。</p>
+      <div class="mathline">u = 200 ÷ 0.5 = <span class="hl">400</span></div>
+      <div class="mathline">v = 160 ÷ 0.5 = <span class="hl">320</span></div>
+      <div class="mathline">　 0.5 ÷ 0.5 = 1 <span class="cm">（3 番目が 1 に戻り、同次座標の約束が満たされた）</span></div>
+      <p>
+        ステップ計算の答え (400, 320) と一致しました。
+        ステップ版は先に Z<sub>c</sub> で割り、行列版は後で割る。
+        本当に同じ計算なのか、行列版の 1 行目を Z<sub>c</sub> で割って確かめます。
+      </p>
+      <div class="mathline">(f<sub>x</sub>·X<sub>c</sub> + c<sub>x</sub>·Z<sub>c</sub>) ÷ Z<sub>c</sub> = f<sub>x</sub>·X<sub>c</sub>/Z<sub>c</sub> + c<sub>x</sub>·Z<sub>c</sub>/Z<sub>c</sub> = f<sub>x</sub>·X<sub>c</sub>/Z<sub>c</sub> + c<sub>x</sub></div>
+      <p>
+        ステップ版の u の式に戻りました。
+        使ったのは「足し算の各項を別々に割ってよい」ことと「Z<sub>c</sub>/Z<sub>c</sub> = 1 と約分できる」ことの 2 つだけなので、
+        どんな数値でも両者は必ず一致します。
+      </p>
+    </div>
+
+    <p class="prose">
+      わざわざ行列にまとめる利点は、式が短くなることだけではありません。
+      世界座標からカメラ座標への変換（R と t）も行列で書けるため、
+      「世界座標 → ピクセル」の全行程を行列の掛け算の連鎖として一気に書き下せるようになります。
+      そして OpenCV の関数が <em>cameraMatrix</em> という 3×3 の配列を要求するのは、この K をそのまま渡しているからです。
+    </p>
+
+    <div class="fig">
+      <div class="fig-bar">
+        <b>FIG. 2</b><span>K の 4 つの数を動かす</span>
+        <span class="note">0.5 m 先の一辺 0.1 m のマーカー（正対・4 隅を投影）</span>
+      </div>
+      <div class="fig-body"><div id="kview"></div></div>
+      <div class="controls">
+        <div class="ctrl">
+          <div class="ctrl-head"><span class="nm">f<sub>x</sub></span><span class="vl" id="v-kfx">800 px</span></div>
+          <input type="range" id="s-kfx" min="400" max="1200" step="10" value="800" aria-label="焦点距離 fx">
+          <div class="ctrl-scale"><span>400</span><span>1200</span></div>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-head"><span class="nm">f<sub>y</sub></span><span class="vl" id="v-kfy">800 px</span></div>
+          <input type="range" id="s-kfy" min="400" max="1200" step="10" value="800" aria-label="焦点距離 fy">
+          <div class="ctrl-scale"><span>400</span><span>1200</span></div>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-head"><span class="nm">c<sub>x</sub></span><span class="vl" id="v-kcx">320 px</span></div>
+          <input type="range" id="s-kcx" min="200" max="440" step="2" value="320" aria-label="主点 cx">
+          <div class="ctrl-scale"><span>200</span><span>440</span></div>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-head"><span class="nm">c<sub>y</sub></span><span class="vl" id="v-kcy">240 px</span></div>
+          <input type="range" id="s-kcy" min="140" max="340" step="2" value="240" aria-label="主点 cy">
+          <div class="ctrl-scale"><span>140</span><span>340</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="readout">
+      <div class="eqbox" id="k-calc"></div>
+      <div class="eqbox">
+        <p class="eq-note">
+          <strong>f<sub>x</sub>, f<sub>y</sub></strong> を上げると、マーカーが主点を中心に拡大されます。
+          焦点距離を伸ばす＝望遠にする操作です。f<sub>x</sub> と f<sub>y</sub> を別々に動かすと、
+          正方形のはずのマーカーが長方形に写ります。これが 2 つを区別して持つ理由です。<br><br>
+          <strong>c<sub>x</sub>, c<sub>y</sub></strong> を動かすと、形は一切変わらず全体が平行移動します。
+          足し算 1 回分の役割しかないからです。十字（＋）が主点の位置を示します。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 6 歪み ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>レンズ歪みと歪み係数</h2>
+      <p class="prose">
+        ここまでの式は、光がまっすぐ進んで小さな穴を 1 点だけ通る、理想のピンホールを仮定していました。
+        実際のカメラは、穴の代わりにレンズで光を集めます。
+        レンズは明るさと引き換えに癖を持ち込みます。
+        ガラスの曲面は中心部と周辺部で光の曲げ方がわずかに違うため、まっすぐな物がわずかに曲がって写るのです。
+        安価な広角カメラで撮った写真の端で、直線の壁が弓なりに見える現象がそれです。
+      </p>
+      <p class="prose">
+        このレンズの癖を数式にしたものが<strong>歪み係数</strong>です。
+        理想のピンホールなら (x′, y′) に写るはずの点が、実際には少しずれた位置 (x″, y″) に写る。
+        そのずれ方を、いくつかの係数を持つ多項式で近似します。
+        歪みはレンズの中で起こるので、<strong>ピクセルに変換する前、正規化画像座標の段階で</strong>適用します。
+        K を掛けるのはその後です。
+      </p>
+    </div>
+
+    <div class="fig">
+      <div class="fig-bar"><b>FIG. 3</b><span>歪みを含めた完全なパイプライン</span></div>
+      <div class="fig-body">
+        <div class="pipe">
+          <div class="pipe-box">カメラ座標<br>(X<sub>c</sub>, Y<sub>c</sub>, Z<sub>c</sub>)</div>
+          <div class="pipe-arrow"><span class="ar">→</span><span>÷ Z<sub>c</sub></span><span class="sub">奥行きで割る</span></div>
+          <div class="pipe-box">正規化画像座標<br>(x′, y′)</div>
+          <div class="pipe-arrow"><span class="ar">→</span><span>k<sub>1</sub>, k<sub>2</sub>, p<sub>1</sub>, p<sub>2</sub>, k<sub>3</sub></span><span class="sub">歪みを加える</span></div>
+          <div class="pipe-box">歪み後の座標<br>(x″, y″)</div>
+          <div class="pipe-arrow"><span class="ar">→</span><span>K を掛ける</span><span class="sub">px に換算・原点移動</span></div>
+          <div class="pipe-box hot">ピクセル座標<br>(u, v)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-head">
+      <p class="prose">
+        ずれの大部分は、点が光軸中心からどれだけ離れているかだけで決まります。
+        レンズは円形で、中心からの距離が同じなら癖も同じだからです。
+        この成分を<strong>放射歪み</strong>と呼び、係数 k<sub>1</sub>, k<sub>2</sub>, k<sub>3</sub> で表します。
+        中心からの距離 r を使って、次の形で書きます。
+      </p>
+    </div>
+
+    <div class="step-block">
+      <span class="label">放射歪みの式</span>
+      <div class="mathline">r² = x′² + y′² <span class="cm">（正規化座標で測った、中心からの距離の 2 乗）</span></div>
+      <div class="mathline">倍率 m = 1 + k<sub>1</sub>·r² + k<sub>2</sub>·r⁴ + k<sub>3</sub>·r⁶</div>
+      <div class="mathline">x″ = x′ · m</div>
+      <div class="mathline">y″ = y′ · m</div>
+      <p>
+        「点を中心から見て m 倍の位置に置き直す」という操作です。
+        m は r に依存するので、<strong>中心付近（r ≈ 0）ではほぼ 1 倍のまま、端に行くほど 1 からずれる</strong>。
+        これが「画像の端ほど歪む」の正体です。
+        役割の分担としては k<sub>1</sub> が主役、k<sub>2</sub> は r⁴ の係数なので端でだけ効く補正役、
+        k<sub>3</sub> はさらに端に限って効く高次の補正で、意味のある値が求まるかどうかはレンズと撮影データしだいです。
+        なお本格的な魚眼レンズは歪みが大きすぎてこの多項式では表しきれないため、
+        OpenCV には <em>cv2.fisheye</em> という別のモデルが用意されています。
+      </p>
+      <p>
+        符号の読み方は次のとおりです。
+        k<sub>1</sub> が負なら m &lt; 1、つまり端の点ほど中心に引き寄せられ、
+        直線が外側にふくらむ<strong>樽型歪み</strong>になります（広角レンズに典型的）。
+        k<sub>1</sub> が正なら端が外に引き出され、直線が内側にへこむ<strong>糸巻き型歪み</strong>になります（望遠レンズに出やすい）。
+      </p>
+    </div>
+
+    <div class="step-block">
+      <span class="label">数値で展開する — k₁ = −0.2、画像の右下の縁に写るはずの点</span>
+      <p>
+        理想のピンホールならちょうど画像の右下の縁 (u, v) = (640, 480) に写る点、
+        (x′, y′) = (0.4, 0.3) で計算します（k<sub>2</sub> = k<sub>3</sub> = 0 とします）。
+        画素の番号は 0〜639 でしたから、(640, 480) は特定の画素ではなく画像の縁を指す位置です。
+      </p>
+      <div class="mathline">r² = 0.4² + 0.3² = 0.16 + 0.09 = <span class="hl">0.25</span></div>
+      <div class="mathline">m = 1 + k<sub>1</sub>·r² = 1 + (−0.2) × 0.25 = 1 − 0.05 = <span class="hl">0.95</span></div>
+      <div class="mathline">x″ = x′ · m = 0.4 × 0.95 = <span class="hl">0.38</span></div>
+      <div class="mathline">y″ = y′ · m = 0.3 × 0.95 = <span class="hl">0.285</span></div>
+      <p>あとはいつもどおり K でピクセルに直します（f<sub>x</sub> = f<sub>y</sub> = 800, c<sub>x</sub> = 320, c<sub>y</sub> = 240）。</p>
+      <div class="mathline">u = 800 × 0.38 + 320 = 304 + 320 = <span class="hl">624</span> <span class="cm">（理想なら 640）</span></div>
+      <div class="mathline">v = 800 × 0.285 + 240 = 228 + 240 = <span class="hl">468</span> <span class="cm">（理想なら 480）</span></div>
+      <p>
+        右下の縁に写るはずだった点が、横に 16 px、縦に 12 px だけ中心寄りに写りました。
+        画像の隅で 20 px 近いずれは、マーカーの 1 px を距離に換算していた前のページの感覚からすると巨大です。
+        歪みを無視した姿勢推定が端で大きく狂う理由がここにあります。
+      </p>
+    </div>
+
+    <div class="fig">
+      <div class="fig-bar">
+        <b>FIG. 4</b><span>歪み係数とグリッドの変形</span>
+        <span class="note" id="dist-note"></span>
+      </div>
+      <div class="fig-body"><div id="dview"></div></div>
+      <div class="controls">
+        <div class="ctrl">
+          <div class="ctrl-head"><span class="nm">k<sub>1</sub> — 放射歪み（主役）</span><span class="vl" id="v-k1">−0.20</span></div>
+          <input type="range" id="s-k1" min="-0.40" max="0.40" step="0.01" value="-0.20" aria-label="放射歪み係数 k1">
+          <div class="ctrl-scale"><span>−0.40</span><span>+0.40</span></div>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-head"><span class="nm">k<sub>2</sub> — 放射歪み（端で効く）</span><span class="vl" id="v-k2">0.00</span></div>
+          <input type="range" id="s-k2" min="-0.20" max="0.20" step="0.01" value="0" aria-label="放射歪み係数 k2">
+          <div class="ctrl-scale"><span>−0.20</span><span>+0.20</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="readout">
+      <div class="eqbox" id="d-calc"></div>
+      <div class="eqbox">
+        <div class="legend" style="padding-bottom:6px">
+          <span><span class="swatch" style="background:var(--line)"></span>理想のピンホール（歪みなし）</span>
+          <span><span class="swatch" style="background:var(--ray)"></span>歪み適用後</span>
+        </div>
+        <p class="eq-note">
+          グリッドは正規化座標に等間隔で引いた直線です。
+          中心付近はほとんど動かず、端ほど大きくずれることを確かめてください。
+          k<sub>2</sub> だけを動かすと、中央部はそのままで四隅だけが動きます。
+          r⁴ は r が小さいところではほぼ 0 だからです。
+        </p>
+      </div>
+    </div>
+
+    <div class="sec-head">
+      <p class="prose">
+        放射歪みのほかにもう 1 種類、レンズとセンサが完全には平行に組み立てられていないことによるずれがあり、
+        これを<strong>接線歪み</strong>と呼びます（係数は p<sub>1</sub>, p<sub>2</sub>）。
+        放射歪みと接線歪みの両方を含めた、標準の 5 係数の式は次のとおりです。
+      </p>
+    </div>
+
+    <div class="step-block">
+      <span class="label">OpenCV の標準 5 係数モデル</span>
+      <div class="mathline">x″ = x′·(1 + k<sub>1</sub>r² + k<sub>2</sub>r⁴ + k<sub>3</sub>r⁶) + 2p<sub>1</sub>·x′y′ + p<sub>2</sub>·(r² + 2x′²)</div>
+      <div class="mathline">y″ = y′·(1 + k<sub>1</sub>r² + k<sub>2</sub>r⁴ + k<sub>3</sub>r⁶) + p<sub>1</sub>·(r² + 2y′²) + 2p<sub>2</sub>·x′y′</div>
+      <p>
+        前半の括弧が放射歪み、後半の p の項が接線歪みです。
+        まともに組み立てられたカメラでは p<sub>1</sub>, p<sub>2</sub> は小さく、
+        まずは k<sub>1</sub> が支配的だと覚えておけば十分です。
+      </p>
+      <p>
+        OpenCV が返す配列 <em>distCoeffs</em> の並び順は
+        <strong>(k<sub>1</sub>, k<sub>2</sub>, p<sub>1</sub>, p<sub>2</sub>, k<sub>3</sub>)</strong> です。
+        番号順ではなく k<sub>3</sub> だけ最後尾に付くので、値を読むときに取り違えないよう注意してください。
+        なお 5 個というのは既定の設定での話で、オプションで高次のモデルを選ぶと配列は 8 個や 12 個、14 個に伸びます。
+        このページの範囲では 5 個のモデルだけ分かれば十分です。
+      </p>
+    </div>
+
+    <p class="callout">
+      <b>歪み補正は、この式の逆向きの計算です。</b>
+      <em>cv2.undistort</em> は、歪み係数を知っている前提で「歪んだ写真から、理想のピンホールで撮ったような写真」を作り直します。
+      係数を知るところまでがキャリブレーション、使って戻すのが歪み補正、という分担です。
+    </p>
+  </section>
+
+  <!-- ============ 7 キャリブレーション ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>キャリブレーションが求めるもの</h2>
+      <p class="prose">
+        <strong>キャリブレーション</strong>（カメラ校正）とは、ここまでに登場した数の一式、
+        すなわち K の中の 4 つ（f<sub>x</sub>, f<sub>y</sub>, c<sub>x</sub>, c<sub>y</sub>）と歪み係数 5 つを、
+        手元のカメラ個体について実測する作業です。
+      </p>
+      <p class="prose">
+        f<sub>x</sub> はレンズの焦点距離と画素サイズから計算できるはずでした。
+        それでも実測が要るのは、仕様書の値が個体の現実と一致しないからです。
+        レンズの取り付け位置は 1 台ごとに微妙に違うので主点は中心から数ピクセル単位でずれ、
+        フォーカスやズームを動かせば f<sub>x</sub> も変わります。
+        歪み係数にいたっては、そもそも仕様書に載っていません。
+      </p>
+      <p class="prose">
+        実測の道具は、寸法を正確に知っている平面パターンです。
+        チェスボードや、ArUco マーカーを碁盤に並べた ChArUco ボードがよく使われます。
+        パターンを角度や位置を変えて何枚も撮影すると、
+        「世界座標でここにあると分かっている点が、ピクセル座標でここに写った」という対応が何百組も手に入ります。
+        キャリブレーションの計算は、その対応すべてを最もよく説明する K と歪み係数
+        （と、各写真での R, t）を探す最適化です。
+        構造は前のページの締めで見た solvePnP と同じで、未知数に内部パラメータまで含めた大型版だと言えます。
+      </p>
+    </div>
+
+    <div class="step-block">
+      <span class="label">cv2.calibrateCamera の入出力</span>
+      <pre><code>ret, cameraMatrix, distCoeffs, rvecs, tvecs = cv2.calibrateCamera(
+    objectPoints,   # パターン上の点の世界座標（寸法から自明）
+    imagePoints,    # 検出されたピクセル座標
+    imageSize,      # (幅, 高さ)
+    None, None)
+
+# cameraMatrix = [[fx,  0, cx],      ← このページの K
+#                 [ 0, fy, cy],
+#                 [ 0,  0,  1]]
+# distCoeffs   = [k1, k2, p1, p2, k3] ← 歪み係数
+# rvecs, tvecs = 各写真の R, t（外部パラメータ）
+# ret          = 全点の RMS 再投影誤差（px）。0 に近いほど良い</code></pre>
+      <p>
+        返ってきた <em>cameraMatrix</em> の対角に並ぶ 2 つの数が「比をピクセルに直す拡大率」、
+        右端の列が「主点の位置」、<em>distCoeffs</em> の 5 つが「レンズの癖」。
+        このページの計算を手でなぞった今なら、数字の一つひとつが読めるはずです。
+      </p>
+      <p>
+        <em>ret</em> は、推定したパラメータで 3D 点を投影し直したとき、
+        実測のピクセル位置と平均でどれだけずれるかを表す値です（RMS は 2 乗平均平方根の意味）。
+        出来栄えの手軽な指標になりますが、良し悪しの線引きは解像度やコーナー検出の精度、用途によって変わります。
+        この 1 つの数字だけで合否を決めず、写真ごとの誤差や、パターンが画面の隅まで写っていたかも併せて確認してください。
+      </p>
+    </div>
+
+    <div class="close-grid">
+      <div class="close-cell">
+        <span class="k">内部パラメータ</span>
+        <span class="v">K = [[f<sub>x</sub>, 0, c<sub>x</sub>], [0, f<sub>y</sub>, c<sub>y</sub>], [0, 0, 1]]</span>
+        <p>奥行きで割った比を、拡大（f<sub>x</sub>, f<sub>y</sub>）と平行移動（c<sub>x</sub>, c<sub>y</sub>）でピクセルに写す。カメラを動かしても変わらない。</p>
+      </div>
+      <div class="close-cell">
+        <span class="k">歪み係数</span>
+        <span class="v">(k<sub>1</sub>, k<sub>2</sub>, p<sub>1</sub>, p<sub>2</sub>, k<sub>3</sub>)</span>
+        <p>理想のピンホールと実物のレンズの差。正規化座標の上で、中心からの距離に応じて点をずらす。</p>
+      </div>
+      <div class="close-cell">
+        <span class="k">次のステップ</span>
+        <span class="v">ArUco 検出 → solvePnP</span>
+        <p>K と歪み係数が手に入れば、マーカー 4 隅のピクセル座標から R, t（マーカーの位置と姿勢）を解ける。キャリブレーションはそのための前準備。</p>
+      </div>
+    </div>
+
+    <footer>
+      数値はすべてページ内でリアルタイムに計算しています。
+      座標系は OpenCV の規約（カメラ座標は X 右・Y 下・Z 前方、画像は左上原点）に従い、
+      例では 640×480 px、f<sub>x</sub> = f<sub>y</sub> = 800 px、主点 (320, 240) を標準値としています。
+      歪みモデルは OpenCV の calib3d モジュールと同じ定義です。
+    </footer>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var IW = 640, IH = 480;
+
+  function el(id) { return document.getElementById(id); }
+  function n(x, d) { return x.toFixed(d); }
+
+  // photograph-like frame: fixed light tone in both themes
+  function frame(inner, pfx) {
+    var g = '<defs><clipPath id="' + pfx + '-clip"><rect x="0" y="0" width="' + IW + '" height="' + IH + '"/></clipPath></defs>';
+    g += '<rect x="-2" y="-2" width="' + (IW + 4) + '" height="' + (IH + 4) + '" fill="#EFF1ED"/>';
+    g += '<g clip-path="url(#' + pfx + '-clip)">' + inner + '</g>';
+    g += '<rect x=".75" y=".75" width="' + (IW - 1.5) + '" height="' + (IH - 1.5) + '" fill="none" stroke="#98A1AC" stroke-width="1.5"/>';
+    return '<svg viewBox="-8 -8 656 496" role="img" aria-label="カメラ画像のシミュレーション">' + g + '</svg>';
+  }
+
+  // ================= FIG 2: play with K =================
+  var kst = { fx: 800, fy: 800, cx: 320, cy: 240 };
+  var KZ = 0.5, KH = 0.05; // marker at 0.5 m, half-size 0.05 m
+
+  function drawK() {
+    var fx = kst.fx, fy = kst.fy, cx = kst.cx, cy = kst.cy;
+    // corners in camera coords (X right, Y down): TL TR BR BL
+    var cs = [[-KH, -KH], [KH, -KH], [KH, KH], [-KH, KH]];
+    var pj = [], i;
+    for (i = 0; i < 4; i++) {
+      pj.push([fx * cs[i][0] / KZ + cx, fy * cs[i][1] / KZ + cy]);
+    }
+
+    var quad = '';
+    for (i = 0; i < 4; i++) quad += n(pj[i][0], 1) + ',' + n(pj[i][1], 1) + ' ';
+
+    var inner = '<polygon fill="#FFFFFF" stroke="#C26C15" stroke-width="2.5" points="' + quad + '"/>';
+    for (i = 0; i < 4; i++) {
+      inner += '<circle cx="' + n(pj[i][0], 1) + '" cy="' + n(pj[i][1], 1) + '" r="5" fill="#C26C15"/>';
+    }
+    // principal point cross
+    inner += '<path stroke="#5B6572" stroke-width="2" fill="none" d="M ' + n(cx - 12, 1) + ' ' + n(cy, 1) + ' H ' + n(cx + 12, 1) +
+             ' M ' + n(cx, 1) + ' ' + n(cy - 12, 1) + ' V ' + n(cy + 12, 1) + '"/>';
+    inner += '<text x="' + n(cx + 16, 1) + '" y="' + n(cy - 8, 1) + '" font-size="13" fill="#5B6572">(cₓ, cᵧ) = (' + Math.round(kst.cx) + ', ' + Math.round(kst.cy) + ')</text>';
+    // BR corner label
+    inner += '<text x="' + n(pj[2][0] + 10, 1) + '" y="' + n(pj[2][1] + 18, 1) + '" font-size="13.5" font-weight="600" fill="#C26C15">(' +
+             n(pj[2][0], 1) + ', ' + n(pj[2][1], 1) + ')</text>';
+
+    el('kview').innerHTML = frame(inner, 'kv');
+
+    var out = pj.some(function (p) { return p[0] < 0 || p[0] > IW || p[1] < 0 || p[1] > IH; });
+
+    var u1 = fx * KH, u2 = u1 / KZ, u3 = u2 + cx;
+    var v1 = fy * KH, v2 = v1 / KZ, v3 = v2 + cy;
+    el('k-calc').innerHTML =
+      '<div style="font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted)">右下の隅 (Xᶜ, Yᶜ, Zᶜ) = (0.05, 0.05, 0.5) の計算</div>' +
+      '<div class="mathline">u = f<sub>x</sub>·X<sub>c</sub>/Z<sub>c</sub> + c<sub>x</sub> = ' + Math.round(fx) + ' × 0.05 / 0.5 + ' + Math.round(cx) + '</div>' +
+      '<div class="mathline">　 = ' + n(u1, 1) + ' / 0.5 + ' + Math.round(cx) + ' = ' + n(u2, 1) + ' + ' + Math.round(cx) + ' = <span class="hl">' + n(u3, 1) + '</span></div>' +
+      '<div class="mathline">v = f<sub>y</sub>·Y<sub>c</sub>/Z<sub>c</sub> + c<sub>y</sub> = ' + Math.round(fy) + ' × 0.05 / 0.5 + ' + Math.round(cy) + '</div>' +
+      '<div class="mathline">　 = ' + n(v1, 1) + ' / 0.5 + ' + Math.round(cy) + ' = ' + n(v2, 1) + ' + ' + Math.round(cy) + ' = <span class="hl">' + n(v3, 1) + '</span></div>' +
+      '<div class="eq-note">一辺 ' + n(kst.fx * 0.1 / KZ, 1) + ' × ' + n(kst.fy * 0.1 / KZ, 1) + ' px の' +
+      (kst.fx === kst.fy ? '正方形' : '<b style="color:var(--warn)">長方形</b>') + 'として写っています。' +
+      (out ? ' <b style="color:var(--warn)">一部が画面の外にはみ出しています。</b>' : '') + '</div>';
+  }
+
+  // ================= FIG 4: distortion =================
+  var dst = { k1: -0.20, k2: 0 };
+  var DFX = 800, DCX = 320, DCY = 240;
+  var GX = 0.4, GY = 0.3; // grid half-extents in normalized coords
+
+  function distort(x, y) {
+    var r2 = x * x + y * y;
+    var m = 1 + dst.k1 * r2 + dst.k2 * r2 * r2;
+    return [x * m, y * m];
+  }
+  function toPx(x, y) { return [DFX * x + DCX, DFX * y + DCY]; }
+
+  function polyline(points, cls) {
+    var d = '', i;
+    for (i = 0; i < points.length; i++) {
+      d += (i ? ' L ' : 'M ') + n(points[i][0], 1) + ' ' + n(points[i][1], 1);
+    }
+    return '<path fill="none" ' + cls + ' d="' + d + '"/>';
+  }
+
+  function gridLines(applyDist) {
+    var out = '', i, j, x, y, pts;
+    var NSEG = 24;
+    for (i = -4; i <= 4; i++) {          // vertical lines x' = i/10
+      pts = [];
+      for (j = 0; j <= NSEG; j++) {
+        x = i / 10; y = -GY + (2 * GY) * j / NSEG;
+        var p = applyDist ? distort(x, y) : [x, y];
+        pts.push(toPx(p[0], p[1]));
+      }
+      out += polyline(pts, applyDist ? 'stroke="#C26C15" stroke-width="1.8"' : 'stroke="#C9CFD8" stroke-width="1"');
+    }
+    for (i = -3; i <= 3; i++) {          // horizontal lines y' = i/10
+      pts = [];
+      for (j = 0; j <= NSEG; j++) {
+        x = -GX + (2 * GX) * j / NSEG; y = i / 10;
+        var q = applyDist ? distort(x, y) : [x, y];
+        pts.push(toPx(q[0], q[1]));
+      }
+      out += polyline(pts, applyDist ? 'stroke="#C26C15" stroke-width="1.8"' : 'stroke="#C9CFD8" stroke-width="1"');
+    }
+    return out;
+  }
+
+  function drawD() {
+    var inner = gridLines(false) + gridLines(true);
+    // reference point: ideal corner (0.4, 0.3)
+    var ip = toPx(GX, GY);
+    var dp0 = distort(GX, GY);
+    var dp = toPx(dp0[0], dp0[1]);
+    inner += '<circle cx="' + n(ip[0], 1) + '" cy="' + n(ip[1], 1) + '" r="4.5" fill="#98A1AC"/>';
+    inner += '<circle cx="' + n(dp[0], 1) + '" cy="' + n(dp[1], 1) + '" r="5.5" fill="#C26C15"/>';
+    inner += '<line stroke="#C26C15" stroke-width="1.2" stroke-dasharray="4 3" x1="' + n(ip[0], 1) + '" y1="' + n(ip[1], 1) +
+             '" x2="' + n(dp[0], 1) + '" y2="' + n(dp[1], 1) + '"/>';
+
+    el('dview').innerHTML = frame(inner, 'dv');
+
+    var r2 = GX * GX + GY * GY;
+    var m = 1 + dst.k1 * r2 + dst.k2 * r2 * r2;
+    var xd = GX * m, yd = GY * m;
+    var u = DFX * xd + DCX, v = DFX * yd + DCY;
+
+    var kind = m < 0.999 ? '樽型歪み（端が中心に引き寄せられる）'
+             : m > 1.001 ? '糸巻き型歪み（端が外に引き出される）'
+             : 'ほぼ歪みなし';
+    el('dist-note').textContent = kind;
+
+    el('d-calc').innerHTML =
+      '<div style="font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted)">理想なら画像の右下の縁 (640, 480) に写る点 (x′, y′) = (0.4, 0.3)</div>' +
+      '<div class="mathline">r² = 0.4² + 0.3² = <span class="hl">0.25</span></div>' +
+      '<div class="mathline">m = 1 + k₁·r² + k₂·r⁴ = 1 + (' + n(dst.k1, 2) + ')×0.25 + (' + n(dst.k2, 2) + ')×0.0625</div>' +
+      '<div class="mathline">　 = 1 + (' + n(dst.k1 * 0.25, 4) + ') + (' + n(dst.k2 * 0.0625, 4) + ') = <span class="hl">' + n(m, 4) + '</span></div>' +
+      '<div class="mathline">x″ = 0.4 × ' + n(m, 4) + ' = ' + n(xd, 4) + '　　y″ = 0.3 × ' + n(m, 4) + ' = ' + n(yd, 4) + '</div>' +
+      '<div class="mathline">u = 800 × ' + n(xd, 4) + ' + 320 = <span class="hl">' + n(u, 1) + '</span> <span class="cm">（理想 640 → ずれ ' + n(u - 640, 1) + ' px）</span></div>' +
+      '<div class="mathline">v = 800 × ' + n(yd, 4) + ' + 240 = <span class="hl">' + n(v, 1) + '</span> <span class="cm">（理想 480 → ずれ ' + n(v - 480, 1) + ' px）</span></div>';
+  }
+
+  // ---------- wiring ----------
+  function bind(id, fn) {
+    el(id).addEventListener('input', function (e) { fn(parseFloat(e.target.value)); });
+  }
+
+  bind('s-kfx', function (x) { kst.fx = x; el('v-kfx').textContent = Math.round(x) + ' px'; drawK(); });
+  bind('s-kfy', function (x) { kst.fy = x; el('v-kfy').textContent = Math.round(x) + ' px'; drawK(); });
+  bind('s-kcx', function (x) { kst.cx = x; el('v-kcx').textContent = Math.round(x) + ' px'; drawK(); });
+  bind('s-kcy', function (x) { kst.cy = x; el('v-kcy').textContent = Math.round(x) + ' px'; drawK(); });
+  bind('s-k1', function (x) { dst.k1 = x; el('v-k1').textContent = (x < 0 ? '−' : '') + n(Math.abs(x), 2); drawD(); });
+  bind('s-k2', function (x) { dst.k2 = x; el('v-k2').textContent = (x < 0 ? '−' : '') + n(Math.abs(x), 2); drawD(); });
+
+  drawK();
+  drawD();
+})();
+</script>
+
+</body>
+</html>
