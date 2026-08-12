@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>*{margin:0;padding:0}</style>
+</head>
+<body>
+<title>ピンホールの相似三角形</title>
+<style>
+  :root {
+    --ground: #E7EAEE;
+    --surface: #F1F3F6;
+    --panel: #FDFDFE;
+    --ink: #151A22;
+    --ink-2: #454F5E;
+    --muted: #78828F;
+    --line: #C6CCD5;
+    --line-soft: #DDE1E7;
+    --ray: #C26C15;
+    --tri: #2E7D9A;
+    --warn: #AC403A;
+    --ok: #3F7A52;
+
+    --mincho: "Hiragino Mincho ProN", "HiraMinProN-W3", "Yu Mincho", YuMincho, "Noto Serif CJK JP", "Noto Serif JP", "Source Han Serif JP", "Songti SC", serif;
+    --gothic: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans CJK JP", "Noto Sans JP", "Yu Gothic", YuGothic, Meiryo, system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Code", "Roboto Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #10141A;
+      --surface: #161B23;
+      --panel: #1B212A;
+      --ink: #E4E9F0;
+      --ink-2: #AAB4C2;
+      --muted: #7C8695;
+      --line: #333C48;
+      --line-soft: #262E39;
+      --ray: #EFA85C;
+      --tri: #5AB2CE;
+      --warn: #E07A72;
+      --ok: #74B98C;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #10141A;
+    --surface: #161B23;
+    --panel: #1B212A;
+    --ink: #E4E9F0;
+    --ink-2: #AAB4C2;
+    --muted: #7C8695;
+    --line: #333C48;
+    --line-soft: #262E39;
+    --ray: #EFA85C;
+    --tri: #5AB2CE;
+    --warn: #E07A72;
+    --ok: #74B98C;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--gothic);
+    font-size: 15px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1140px;
+    margin-inline: auto;
+    padding: clamp(28px, 5vw, 64px) clamp(16px, 4vw, 40px) 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 76px;
+  }
+
+  /* ---------- header ---------- */
+
+  header { display: flex; flex-direction: column; gap: 20px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  h1 {
+    font-family: var(--mincho);
+    font-weight: 600;
+    font-size: clamp(30px, 5.2vw, 46px);
+    line-height: 1.3;
+    letter-spacing: .02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .lede { max-width: 38em; color: var(--ink-2); margin: 0; }
+
+  .hero-eq {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 24px 4px;
+  }
+
+  /* ---------- sections ---------- */
+
+  section { display: flex; flex-direction: column; gap: 26px; }
+
+  h2 {
+    font-family: var(--mincho);
+    font-weight: 600;
+    font-size: clamp(21px, 3vw, 27px);
+    line-height: 1.5;
+    letter-spacing: .02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .sec-head { display: flex; flex-direction: column; gap: 12px; }
+
+  .prose { max-width: 40em; margin: 0; color: var(--ink-2); }
+  .prose strong { color: var(--ink); font-weight: 600; }
+  .prose em, .lede em { font-style: normal; font-family: var(--mono); font-size: .94em; }
+
+  /* ---------- figure panel ---------- */
+
+  .fig { background: var(--panel); border: 1px solid var(--line); }
+
+  .fig-bar {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--surface);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    color: var(--muted);
+  }
+  .fig-bar b { color: var(--ink-2); font-weight: 600; letter-spacing: .14em; }
+  .fig-bar .note { margin-left: auto; letter-spacing: .04em; }
+
+  .fig-body { padding: 18px 16px; overflow-x: auto; }
+  .fig-body + .fig-body { border-top: 1px solid var(--line-soft); }
+
+  svg { display: block; width: 100%; height: auto; }
+  svg text { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  .svg-min-760 { min-width: 760px; }
+  .svg-min-680 { min-width: 680px; }
+  .svg-min-560 { min-width: 560px; }
+
+  /* svg semantics */
+  .s-axis  { stroke: var(--line); stroke-width: 1; fill: none; }
+  .s-body  { stroke: var(--ink); fill: none; }
+  .s-plane { stroke: var(--ink-2); fill: none; }
+  .s-ray   { stroke: var(--ray); fill: none; stroke-width: 1.6; }
+  .s-dim   { stroke: var(--muted); stroke-width: 1; fill: none; }
+  .s-grid  { stroke: var(--line-soft); stroke-width: 1; fill: none; }
+  .f-tri-far  { fill: var(--tri); opacity: .10; }
+  .f-tri-near { fill: var(--tri); opacity: .21; }
+  .f-ray   { fill: var(--ray); }
+  .f-ink   { fill: var(--ink); }
+  .f-arrow { fill: var(--muted); }
+  .t-lbl   { fill: var(--ink-2); font-size: 13px; font-weight: 500; }
+  .t-dim   { fill: var(--muted); font-size: 12.5px; }
+  .t-key   { fill: var(--ray); font-size: 13.5px; font-weight: 600; }
+  .t-tri   { fill: var(--tri); font-size: 13.5px; font-weight: 600; }
+  .t-small { fill: var(--muted); font-size: 11px; letter-spacing: .05em; }
+
+  /* ---------- controls ---------- */
+
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px 28px;
+    border-top: 1px solid var(--line-soft);
+    padding: 16px;
+  }
+
+  .ctrl { display: flex; flex-direction: column; gap: 5px; }
+
+  .ctrl-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .ctrl-head .nm { color: var(--ink-2); letter-spacing: .04em; }
+  .ctrl-head .vl { color: var(--ink); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 22px;
+    margin: 0;
+    background: transparent;
+    cursor: ew-resize;
+  }
+  input[type="range"]::-webkit-slider-runnable-track { height: 2px; background: var(--line); }
+  input[type="range"]::-moz-range-track { height: 2px; background: var(--line); }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 13px; height: 13px; margin-top: -5.5px;
+    background: var(--ray); border: none; border-radius: 0;
+    transform: rotate(45deg);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 12px; height: 12px;
+    background: var(--ray); border: none; border-radius: 0;
+  }
+  input[type="range"]:focus-visible { outline: 2px solid var(--ray); outline-offset: 3px; }
+
+  .ctrl-scale {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-top: -3px;
+  }
+
+  /* ---------- readout ---------- */
+
+  .readout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 18px;
+    align-items: stretch;
+  }
+  @media (max-width: 780px) { .readout { grid-template-columns: 1fr; } }
+
+  .eqbox {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 24px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    justify-content: center;
+  }
+
+  .eq {
+    font-family: var(--mono);
+    font-size: clamp(16px, 2.4vw, 20px);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .45em;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+  }
+  .eq .op { color: var(--muted); }
+  .eq .res { color: var(--ray); font-weight: 700; }
+
+  .frac {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: middle;
+    line-height: 1.25;
+  }
+  .frac > .n { padding: 0 .5em .12em; border-bottom: 1.5px solid currentColor; }
+  .frac > .d { padding: .12em .5em 0; }
+
+  .v-Z, .v-L { color: var(--tri); font-weight: 700; }
+  .v-fx { color: var(--ink); font-weight: 700; }
+
+  .eq-note { font-size: 13.5px; color: var(--ink-2); line-height: 1.8; font-family: var(--gothic); }
+  .eq-note strong { color: var(--ink-2); font-weight: 600; }
+  .eq-note em { font-style: normal; font-family: var(--mono); font-size: .94em; }
+
+  /* ---------- table ---------- */
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  caption {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .12em;
+    color: var(--muted);
+    padding-bottom: 10px;
+  }
+  th, td { text-align: right; padding: 9px 10px; border-bottom: 1px solid var(--line-soft); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600; letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+  }
+  tbody td { font-family: var(--mono); color: var(--ink-2); }
+  tbody td:first-child { font-family: var(--gothic); color: var(--ink); }
+  tbody tr:last-child td { border-bottom: none; }
+  .good { color: var(--ok); }
+  .bad  { color: var(--warn); font-weight: 600; }
+  .tbl-wrap { overflow-x: auto; }
+
+  .side-panel { background: var(--panel); border: 1px solid var(--line); padding: 18px 18px 14px; }
+
+  .swatch { display: inline-block; width: 9px; height: 9px; margin-right: 9px; vertical-align: middle; }
+  th.verdict, td.verdict { text-align: left; }
+
+  /* ---------- callout ---------- */
+
+  .callout {
+    border-left: 2px solid var(--ray);
+    padding: 3px 0 3px 18px;
+    max-width: 40em;
+    color: var(--ink-2);
+    font-size: 14px;
+  }
+  .callout b { color: var(--ink); }
+  .callout em { font-style: normal; font-family: var(--mono); font-size: .94em; }
+
+  /* ---------- closing ---------- */
+
+  .close-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  .close-cell { background: var(--panel); padding: 20px 18px; display: flex; flex-direction: column; gap: 9px; }
+  .close-cell .k { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--muted); }
+  .close-cell .v { font-family: var(--mono); font-size: 15px; color: var(--ray); font-weight: 600; }
+  .close-cell p { margin: 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.75; }
+
+  code {
+    font-family: var(--mono);
+    font-size: .92em;
+    background: var(--surface);
+    border: 1px solid var(--line-soft);
+    padding: .1em .4em;
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 42em;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 26px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  @media (max-width: 720px) { .tilt-grid { grid-template-columns: 1fr !important; } }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Pinhole camera model / ArUco</div>
+    <h1>ピンホールの相似三角形</h1>
+    <p class="lede">
+      マーカーが画像に何ピクセルで写るかは、ピンホールを頂点とする二つの相似な三角形だけで決まります。
+      スライダーを動かして、その比が崩れないことを確かめてください。
+    </p>
+    <div class="hero-eq">
+      <div class="eq">
+        <span class="frac"><span class="n">p</span><span class="d">f<sub>x</sub></span></span>
+        <span class="op">=</span>
+        <span class="frac"><span class="n">L</span><span class="d">Z</span></span>
+        <span class="op" style="padding-inline:.7em">⟺</span>
+        <span>Z</span><span class="op">=</span>
+        <span class="frac"><span class="n">f<sub>x</sub> · L</span><span class="d">p</span></span>
+      </div>
+      <div class="eq-note" style="max-width:32ch">
+        画像上の大きさ <em>p</em> と焦点距離 <em>f<sub>x</sub></em> の比は、
+        実物の大きさ <em>L</em> と距離 <em>Z</em> の比に等しい。
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ 1 ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>光線はピンホールで交差する</h2>
+      <p class="prose">
+        マーカーの上端から出た光と下端から出た光は、小さな穴を通って画像面に届きます。
+        このとき穴を頂点として、<strong>実物側の三角形</strong>と<strong>画像側の三角形</strong>という
+        向かい合った二つの三角形ができます。頂角が共通で底辺が平行なので、この二つは必ず相似です。
+      </p>
+      <p class="prose">
+        相似ということは、<strong>高さと底辺の比が両方で等しい</strong>ということ。
+        それを書き下しただけのものが <em>p / f<sub>x</sub> = L / Z</em> です。
+      </p>
+    </div>
+
+    <div class="fig">
+      <div class="fig-bar">
+        <b>FIG. 1</b><span>光学ベンチ — 側面図</span>
+        <span class="note">横方向の縮尺は左右で異なる（模式図）／二つの三角形は厳密に相似</span>
+      </div>
+      <div class="fig-body"><div class="svg-min-760" id="bench"></div></div>
+      <div class="controls">
+        <div class="ctrl">
+          <div class="ctrl-head"><span class="nm">Z — マーカーまでの距離</span><span class="vl" id="v-Z">1.00 m</span></div>
+          <input type="range" id="s-Z" min="0.70" max="2.00" step="0.01" value="1.00" aria-label="マーカーまでの距離 Z">
+          <div class="ctrl-scale"><span>0.70 m</span><span>2.00 m</span></div>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-head"><span class="nm">L — マーカーの一辺</span><span class="vl" id="v-L">0.100 m</span></div>
+          <input type="range" id="s-L" min="0.050" max="0.140" step="0.002" value="0.100" aria-label="マーカーの一辺 L">
+          <div class="ctrl-scale"><span>5 cm</span><span>14 cm</span></div>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-head"><span class="nm">f<sub>x</sub> — 焦点距離</span><span class="vl" id="v-fx">800 px</span></div>
+          <input type="range" id="s-fx" min="600" max="1000" step="10" value="800" aria-label="焦点距離 fx">
+          <div class="ctrl-scale"><span>600 px</span><span>1000 px</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="readout">
+      <div class="eqbox">
+        <div class="eq">
+          <span>p</span><span class="op">=</span>
+          <span class="frac"><span class="n"><span class="v-fx" id="e-fx">800</span> × <span class="v-L" id="e-L">0.100</span></span><span class="d"><span class="v-Z" id="e-Z">1.00</span></span></span>
+          <span class="op">=</span>
+          <span class="res" id="e-p">80.0 px</span>
+        </div>
+        <div class="eq" style="font-size:clamp(14px,2vw,17px)">
+          <span class="op">逆に解いて</span>
+          <span>Z</span><span class="op">=</span>
+          <span class="frac"><span class="n"><span class="v-fx">f<sub>x</sub></span> × <span class="v-L">L</span></span><span class="d">p</span></span>
+        </div>
+        <p class="eq-note">
+          実際のカメラで測れるのは <em>p</em>（画像上で何ピクセルか）だけです。
+          <em>f<sub>x</sub></em> はキャリブレーションで、<em>L</em> は印刷したマーカーの実寸としてどちらも既知なので、
+          残った <em>Z</em> が求まります。<strong>これが距離推定の全体です。</strong>
+        </p>
+      </div>
+      <div class="side-panel">
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted);padding-bottom:10px">
+          カメラが撮る画像 — 640 × 480 px
+        </div>
+        <div id="preview"></div>
+      </div>
+    </div>
+
+    <p class="callout">
+      <b>像は上下左右が反転します。</b>
+      図の ▲ と ▼ を見てください。マーカーの上端から来た光は、画像面では下側に当たっています。
+      ただし OpenCV の式ではピンホールの<em>手前</em>に仮想的な画像面を置いて考えるため、
+      この反転は数式には現れません。右のプレビューも反転させずに描いてあります。
+    </p>
+  </section>
+
+  <!-- ============ 2 ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>距離が2倍なら、大きさは半分</h2>
+      <p class="prose">
+        <em>p = f<sub>x</sub>L / Z</em> の <em>Z</em> は分母にいるので、
+        距離と見かけの大きさは<strong>反比例</strong>します。カーブが手前で急に立ち上がり、
+        遠方で寝てしまう——この形が、そのまま距離推定の精度に効いてきます。
+      </p>
+      <p class="prose">
+        遠方でカーブが寝ているということは、<strong>1 px の測定誤差が生む距離の誤差が大きい</strong>ということです。
+        グラフ下の帯が、±1 px に対応する距離の幅を表しています。
+      </p>
+    </div>
+
+    <div class="fig">
+      <div class="fig-bar">
+        <b>FIG. 2</b><span>距離と見かけの大きさ</span>
+        <span class="note" id="curve-note">f<sub>x</sub> · L = 80.0 px·m</span>
+      </div>
+      <div class="fig-body"><div class="svg-min-560" id="curve"></div></div>
+    </div>
+
+    <div class="readout">
+      <div class="side-panel">
+        <div class="tbl-wrap">
+          <table>
+            <caption>±1 PX の測定誤差が生む距離の誤差</caption>
+            <thead><tr><th>距離 Z</th><th>見かけ p</th><th>1 px あたり</th></tr></thead>
+            <tbody id="err-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="eqbox">
+        <div class="eq" style="font-size:clamp(15px,2.2vw,18px)">
+          <span>ΔZ</span><span class="op">≈</span>
+          <span class="frac"><span class="n">Z</span><span class="d">p</span></span>
+          <span class="op">·</span><span>Δp</span>
+          <span class="op">=</span>
+          <span class="frac"><span class="n">Z²</span><span class="d">f<sub>x</sub> · L</span></span>
+          <span class="op">·</span><span>Δp</span>
+        </div>
+        <p class="eq-note">
+          距離の誤差は <strong>Z の2乗</strong>で効きます。2倍遠ざかれば誤差は4倍。
+          精度が欲しければマーカーを大きく印刷する（<em>L</em> を上げる）か、
+          解像度や焦点距離を上げる（<em>f<sub>x</sub></em> を上げる）しかありません。
+          どちらも <em>f<sub>x</sub>·L</em> という積を大きくする操作です。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3 ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>正対が崩れると、どの辺を測るかで答えが変わる</h2>
+      <p class="prose">
+        ここまでの式は<strong>マーカーがカメラに正対している</strong>ことを前提にしていました。
+        傾くとマーカーの左端と右端でカメラからの距離が変わります。すると画像上では正方形が<strong>台形</strong>になり、
+        「<em>p</em> はどの辺の長さなのか」が決まらなくなります。
+      </p>
+      <p class="prose">
+        下の図で角度を動かしてください。単純な式に左辺の長さを入れると<strong>左端までの距離</strong>が、
+        右辺を入れると<strong>右端までの距離</strong>が返ってきます。式が壊れているのではなく、
+        <strong>それぞれの辺について正しく答えている</strong>だけです。
+      </p>
+    </div>
+
+    <div class="fig">
+      <div class="fig-bar">
+        <b>FIG. 3</b><span>傾いたマーカー — 上から見た図</span>
+        <span class="note">Z = 1.000 m ・ L = 0.100 m ・ f<sub>x</sub> = 800 px に固定／縦横は等倍</span>
+      </div>
+      <div class="fig-body"><div class="svg-min-680" id="topview"></div></div>
+      <div class="fig-body">
+        <div class="tilt-grid" style="display:grid;grid-template-columns:300px minmax(0,1fr);gap:26px;align-items:start">
+          <div>
+            <div style="font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted);padding-bottom:8px">
+              そのとき画像に写る形 — 中央を拡大
+            </div>
+            <div id="tiltpreview"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;padding-top:22px">
+            <div class="legend">
+              <span><span class="swatch" style="background:#C26C15"></span>左辺（画像の左側）</span>
+              <span><span class="swatch" style="background:#2E7D9A"></span>右辺（画像の右側）</span>
+            </div>
+            <div class="tbl-wrap">
+              <table>
+                <thead>
+                  <tr><th>測った辺</th><th>画像上の長さ</th><th>f<sub>x</sub>L / p が返す Z</th><th class="verdict">その値の正体</th></tr>
+                </thead>
+                <tbody id="tilt-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="ctrl" style="max-width:400px">
+          <div class="ctrl-head"><span class="nm">θ — マーカーの傾き（縦軸まわり）</span><span class="vl" id="v-th">30°</span></div>
+          <input type="range" id="s-th" min="0" max="60" step="1" value="30" aria-label="マーカーの傾き θ">
+          <div class="ctrl-scale"><span>0°（正対）</span><span>60°</span></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="callout">
+      <b>横幅で測ると本当に間違えます。</b>
+      縦の辺は傾けても実寸 <em>L</em> のままですが、横幅は <em>L·cos θ</em> に縮んで写ります。
+      その縮んだ長さを実寸だと思って式に入れるので、<strong>実際より遠い</strong>という答えが返ってきます。
+      式の限界ではなく、前提（正対）を破ったことの帰結です。
+    </p>
+  </section>
+
+  <!-- ============ closing ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>ここから先が solvePnP</h2>
+      <p class="prose">
+        傾いたマーカーの距離と向きを正しく求めるには、辺を一本だけ測るのをやめて
+        <strong>4隅すべての位置</strong>を使います。4隅から 8 個の式が立ち、
+        そこから回転 <em>R</em>（3自由度）と並進 <em>t</em>（3自由度）の 6 個の未知数を解く——
+        これが <code>cv2.solvePnP</code> のやっていることです。
+      </p>
+      <p class="prose">
+        そして解いた <em>R</em>, <em>t</em> を使って 3D 点を画像に落とす計算は、
+        このページで見た相似三角形とまったく同じものです。
+        <strong>「奥行きで割る」という一行</strong>が、その中心にあります。
+      </p>
+    </div>
+
+    <div class="close-grid">
+      <div class="close-cell">
+        <span class="k">相似三角形</span>
+        <span class="v">p / f<sub>x</sub> = L / Z</span>
+        <p>正対のときだけ成立。距離だけ知りたいならこれで十分です。</p>
+      </div>
+      <div class="close-cell">
+        <span class="k">透視投影</span>
+        <span class="v">u = f<sub>x</sub> · X<sub>c</sub> / Z<sub>c</sub> + c<sub>x</sub></span>
+        <p>点ひとつを画像に落とす式。奥行き Z<sub>c</sub> で割る部分が、相似三角形そのものです。</p>
+      </div>
+      <div class="close-cell">
+        <span class="k">姿勢推定</span>
+        <span class="v">min ‖ m − proj(R, t) ‖²</span>
+        <p>4隅の実測位置と、R・t から計算した位置との差が最小になる姿勢を探します。</p>
+      </div>
+    </div>
+
+    <footer>
+      数値はすべてページ内でリアルタイムに計算しています。
+      画像座標は OpenCV の規約（原点は左上、u は右向き、v は下向き）に従い、
+      主点は c<sub>x</sub> = 320, c<sub>y</sub> = 240、レンズ歪みはゼロとしています。
+    </footer>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var st = { Z: 1.00, L: 0.100, fx: 800, th: 30 };
+
+  function el(id) { return document.getElementById(id); }
+  function n(x, d) { return x.toFixed(d); }
+
+  // ---------- svg primitives ----------
+
+  function defs(pfx) {
+    return '<defs>' +
+      '<marker id="' + pfx + '-ar" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
+        '<path d="M 0 1 L 10 5 L 0 9 z" class="f-arrow"/></marker>' +
+      '<marker id="' + pfx + '-ray" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto">' +
+        '<path d="M 0 1 L 10 5 L 0 9 z" class="f-ray"/></marker>' +
+      '</defs>';
+  }
+
+  // straight ray with an arrowhead at its midpoint
+  function ray(pfx, x1, y1, x2, y2) {
+    return '<path class="s-ray" d="M ' + n(x1, 1) + ' ' + n(y1, 1) +
+      ' L ' + n((x1 + x2) / 2, 1) + ' ' + n((y1 + y2) / 2, 1) +
+      ' L ' + n(x2, 1) + ' ' + n(y2, 1) + '" marker-mid="url(#' + pfx + '-ray)"/>';
+  }
+
+  function dimH(pfx, x1, x2, y, label) {
+    return '<line class="s-dim" x1="' + n(x1, 1) + '" y1="' + y + '" x2="' + n(x2, 1) + '" y2="' + y + '" ' +
+             'marker-start="url(#' + pfx + '-ar)" marker-end="url(#' + pfx + '-ar)"/>' +
+           '<line class="s-dim" x1="' + n(x1, 1) + '" y1="' + (y - 6) + '" x2="' + n(x1, 1) + '" y2="' + (y + 6) + '"/>' +
+           '<line class="s-dim" x1="' + n(x2, 1) + '" y1="' + (y - 6) + '" x2="' + n(x2, 1) + '" y2="' + (y + 6) + '"/>' +
+           '<text class="t-dim" x="' + n((x1 + x2) / 2, 1) + '" y="' + (y + 18) + '" text-anchor="middle">' + label + '</text>';
+  }
+
+  function dimV(pfx, x, y1, y2, label, anchor) {
+    var tx = anchor === 'end' ? x - 9 : x + 9;
+    return '<line class="s-dim" x1="' + n(x, 1) + '" y1="' + n(y1, 1) + '" x2="' + n(x, 1) + '" y2="' + n(y2, 1) + '" ' +
+             'marker-start="url(#' + pfx + '-ar)" marker-end="url(#' + pfx + '-ar)"/>' +
+           '<line class="s-dim" x1="' + n(x - 6, 1) + '" y1="' + n(y1, 1) + '" x2="' + n(x + 6, 1) + '" y2="' + n(y1, 1) + '"/>' +
+           '<line class="s-dim" x1="' + n(x - 6, 1) + '" y1="' + n(y2, 1) + '" x2="' + n(x + 6, 1) + '" y2="' + n(y2, 1) + '"/>' +
+           '<text class="t-dim" x="' + n(tx, 1) + '" y="' + n((y1 + y2) / 2 - 7, 1) + '" text-anchor="' + anchor + '">' + label + '</text>';
+  }
+
+  function triUp(x, y, s) {
+    return '<polygon class="f-ink" points="' + n(x, 1) + ',' + n(y - s, 1) + ' ' +
+      n(x - s * .86, 1) + ',' + n(y + s * .5, 1) + ' ' + n(x + s * .86, 1) + ',' + n(y + s * .5, 1) + '"/>';
+  }
+  function triDown(x, y, s) {
+    return '<polygon class="f-ink" points="' + n(x, 1) + ',' + n(y + s, 1) + ' ' +
+      n(x - s * .86, 1) + ',' + n(y - s * .5, 1) + ' ' + n(x + s * .86, 1) + ',' + n(y - s * .5, 1) + '"/>';
+  }
+
+  // ---------- projection, OpenCV convention ----------
+  // marker frame: x right, y up, z out of the face.
+  // R = Ry(th)·diag(1,-1,-1),  t = (0,0,Z)   =>
+  //   Xc = cos(th)·mx,  Yc = -my,  Zc = Z - sin(th)·mx
+  var CX = 320, CY = 240, IW = 640, IH = 480;
+
+  function project(mx, my, Z, fx, thDeg) {
+    var t = thDeg * Math.PI / 180, c = Math.cos(t), s = Math.sin(t);
+    var zc = Z - s * mx;
+    return { u: fx * (c * mx) / zc + CX, v: fx * (-my) / zc + CY, zc: zc };
+  }
+
+  // ================= FIG 1 =================
+  var SX = 220;    // drawn px per metre (object side, horizontal)
+  var SY = 1600;   // drawn px per metre (vertical, shared by both triangles)
+
+  function drawBench() {
+    var Z = st.Z, L = st.L, fx = st.fx;
+    var F = fx / 4;             // drawn focal length
+    var D = Z * SX;             // drawn object distance
+    var mh = (L / 2) * SY;      // marker half height
+    var ih = (F / D) * mh;      // image half height — exact similarity
+    var p = fx * L / Z;
+    var PH = Math.max(190, ih + 20);   // height of the plate / image plane
+    var DY = 225;                      // baseline for horizontal dimensions
+
+    var g = defs('b');
+
+    g += '<line class="s-axis" x1="-412" y1="0" x2="575" y2="0" stroke-dasharray="16 4 2 4"/>';
+
+    g += '<polygon class="f-tri-far" points="0,0 ' + n(D, 1) + ',' + n(-mh, 1) + ' ' + n(D, 1) + ',' + n(mh, 1) + '"/>';
+    g += '<polygon class="f-tri-near" points="0,0 ' + n(-F, 1) + ',' + n(ih, 1) + ' ' + n(-F, 1) + ',' + n(-ih, 1) + '"/>';
+
+    g += ray('b', D, -mh, 0, 0);
+    g += ray('b', D, mh, 0, 0);
+    g += ray('b', 0, 0, -F, ih);
+    g += ray('b', 0, 0, -F, -ih);
+
+    // pinhole plate with a gap at the axis
+    g += '<line class="s-body" stroke-width="4.5" x1="0" y1="' + n(-PH, 1) + '" x2="0" y2="-7"/>';
+    g += '<line class="s-body" stroke-width="4.5" x1="0" y1="7" x2="0" y2="' + n(PH, 1) + '"/>';
+
+    // image plane, and the image itself
+    g += '<line class="s-plane" stroke-width="1.6" x1="' + n(-F, 1) + '" y1="' + n(-PH, 1) + '" x2="' + n(-F, 1) + '" y2="' + n(PH, 1) + '"/>';
+    g += '<line class="s-ray" stroke-width="5.5" x1="' + n(-F, 1) + '" y1="' + n(-ih, 1) + '" x2="' + n(-F, 1) + '" y2="' + n(ih, 1) + '"/>';
+
+    // marker
+    g += '<line class="s-body" stroke-width="5.5" x1="' + n(D, 1) + '" y1="' + n(-mh, 1) + '" x2="' + n(D, 1) + '" y2="' + n(mh, 1) + '"/>';
+
+    // orientation tokens — the image is flipped
+    g += triUp(D + 14, -mh, 5.5);
+    g += triDown(D + 14, mh, 5.5);
+    g += triUp(-F - 14, ih, 5.5);
+    g += triDown(-F - 14, -ih, 5.5);
+
+    g += dimH('b', 0, D, DY, 'Z = ' + n(Z, 2) + ' m');
+    g += dimH('b', -F, 0, DY, 'fx = ' + Math.round(fx) + ' px');
+    g += dimV('b', D + 50, -mh, mh, 'L = ' + n(L, 3) + ' m', 'start');
+    g += dimV('b', -F - 50, -ih, ih, 'p = ' + n(p, 1) + ' px', 'end');
+
+    g += '<text class="t-lbl" x="' + n(-F, 1) + '" y="' + n(-PH - 11, 1) + '" text-anchor="middle">画像面（センサ）</text>';
+    g += '<text class="t-lbl" x="0" y="' + n(-PH - 11, 1) + '" text-anchor="middle">ピンホール</text>';
+    g += '<text class="t-lbl" x="' + n(D, 1) + '" y="' + n(-Math.max(mh, 30) - 22, 1) + '" text-anchor="middle">ArUco マーカー</text>';
+
+    g += '<text class="t-tri" x="' + n(D * .62, 1) + '" y="' + n(Math.max(mh * .20 + 5, 18), 1) + '" text-anchor="middle">実物側</text>';
+    g += '<text class="t-tri" x="' + n(-F * .62, 1) + '" y="' + n(Math.min(-ih * .20 + 5, -16), 1) + '" text-anchor="middle">画像側</text>';
+
+    el('bench').innerHTML =
+      '<svg viewBox="-412 -230 1002 490" role="img" aria-label="ピンホールを頂点として実物側と画像側にできる二つの相似三角形の側面図">' + g + '</svg>';
+  }
+
+  // ---------- ArUco bitmap: 1-cell black border + 4x4 payload ----------
+  var BITS = [
+    [1, 0, 1, 1],
+    [0, 1, 1, 0],
+    [1, 1, 0, 1],
+    [0, 0, 1, 0]
+  ];
+
+  function markerCells(Z, fx, thDeg, L) {
+    var h = L / 2, pts = [], r, c;
+    for (r = 0; r <= 6; r++) {
+      pts[r] = [];
+      for (c = 0; c <= 6; c++) {
+        pts[r][c] = project(-h + (c / 6) * L, h - (r / 6) * L, Z, fx, thDeg);
+      }
+    }
+    var out = '';
+    for (var i = 0; i < 6; i++) {
+      for (var j = 0; j < 6; j++) {
+        var black = (i === 0 || i === 5 || j === 0 || j === 5) ? true : (BITS[i - 1][j - 1] === 0);
+        if (!black) continue;
+        var a = pts[i][j], b = pts[i][j + 1], d = pts[i + 1][j + 1], e = pts[i + 1][j];
+        out += '<polygon fill="#121A22" points="' +
+          n(a.u, 1) + ',' + n(a.v, 1) + ' ' + n(b.u, 1) + ',' + n(b.v, 1) + ' ' +
+          n(d.u, 1) + ',' + n(d.v, 1) + ' ' + n(e.u, 1) + ',' + n(e.v, 1) + '"/>';
+      }
+    }
+    return out;
+  }
+
+  // the preview mimics a photograph, so it keeps one fixed light tone in both themes
+  // vp crops the view onto part of the image; omit it to show the whole frame
+  function imagePanel(Z, fx, thDeg, L, pfx, extra, vp) {
+    vp = vp || { x: 0, y: 0, w: IW, h: IH };
+    var h = L / 2;
+    var c0 = project(-h, h, Z, fx, thDeg);
+    var c1 = project(h, h, Z, fx, thDeg);
+    var c2 = project(h, -h, Z, fx, thDeg);
+    var c3 = project(-h, -h, Z, fx, thDeg);
+    var quad = n(c0.u, 1) + ',' + n(c0.v, 1) + ' ' + n(c1.u, 1) + ',' + n(c1.v, 1) + ' ' +
+               n(c2.u, 1) + ',' + n(c2.v, 1) + ' ' + n(c3.u, 1) + ',' + n(c3.v, 1);
+
+    var g = '<defs><clipPath id="' + pfx + '-clip"><rect x="' + vp.x + '" y="' + vp.y +
+            '" width="' + vp.w + '" height="' + vp.h + '"/></clipPath></defs>';
+    g += '<rect x="' + (vp.x - 2) + '" y="' + (vp.y - 2) + '" width="' + (vp.w + 4) + '" height="' + (vp.h + 4) + '" fill="#EFF1ED"/>';
+    g += '<g clip-path="url(#' + pfx + '-clip)">';
+    g += '<polygon fill="#FFFFFF" points="' + quad + '"/>';
+    g += markerCells(Z, fx, thDeg, L);
+    if (extra) g += extra(c0, c1, c2, c3);
+    g += '</g>';
+    g += '<rect x="' + (vp.x + .75) + '" y="' + (vp.y + .75) + '" width="' + (vp.w - 1.5) + '" height="' + (vp.h - 1.5) +
+         '" fill="none" stroke="#98A1AC" stroke-width="1.5"/>';
+    var t = Math.round(vp.w / 23), x0 = vp.x, y0 = vp.y, x1 = vp.x + vp.w, y1 = vp.y + vp.h;
+    g += '<path fill="none" stroke="#5B6572" stroke-width="3" d="M ' + x0 + ' ' + (y0 + t) + ' L ' + x0 + ' ' + y0 + ' L ' + (x0 + t) + ' ' + y0 +
+         ' M ' + (x1 - t) + ' ' + y0 + ' L ' + x1 + ' ' + y0 + ' L ' + x1 + ' ' + (y0 + t) +
+         ' M ' + x1 + ' ' + (y1 - t) + ' L ' + x1 + ' ' + y1 + ' L ' + (x1 - t) + ' ' + y1 +
+         ' M ' + (x0 + t) + ' ' + y1 + ' L ' + x0 + ' ' + y1 + ' L ' + x0 + ' ' + (y1 - t) + '"/>';
+    return '<svg viewBox="' + (vp.x - 2) + ' ' + (vp.y - 2) + ' ' + (vp.w + 4) + ' ' + (vp.h + 4) +
+           '" role="img" aria-label="カメラ画像に写ったマーカー">' + g + '</svg>';
+  }
+
+  function drawPreview() {
+    var p = st.fx * st.L / st.Z;
+    el('preview').innerHTML = imagePanel(st.Z, st.fx, 0, st.L, 'pv', null) +
+      '<div style="display:flex;justify-content:space-between;gap:12px;font-family:var(--mono);font-size:12px;' +
+      'color:var(--muted);padding-top:9px;font-variant-numeric:tabular-nums">' +
+        '<span>一辺 <b style="color:var(--ray)">' + n(p, 1) + ' px</b></span>' +
+        '<span>' + (p > IH ? '<span style="color:var(--warn)">画面からはみ出しています</span>'
+                           : '画像の高さの ' + n(p / IH * 100, 1) + ' %') + '</span>' +
+      '</div>';
+  }
+
+  // ================= FIG 2 =================
+  var CV = { x0: 78, x1: 862, y0: 26, y1: 292, zmin: 0.3, zmax: 5.0, pmax: 400 };
+  function cvx(z) { return CV.x0 + (z - CV.zmin) / (CV.zmax - CV.zmin) * (CV.x1 - CV.x0); }
+  function cvy(p) { return CV.y1 - Math.min(p, CV.pmax) / CV.pmax * (CV.y1 - CV.y0); }
+
+  function drawCurve() {
+    var K = st.fx * st.L;
+    var g = '', i;
+
+    var pt = [100, 200, 300, 400], zt = [1, 2, 3, 4, 5];
+    for (i = 0; i < pt.length; i++) {
+      g += '<line class="s-grid" x1="' + CV.x0 + '" y1="' + n(cvy(pt[i]), 1) + '" x2="' + CV.x1 + '" y2="' + n(cvy(pt[i]), 1) + '"/>';
+      g += '<text class="t-small" x="' + (CV.x0 - 10) + '" y="' + n(cvy(pt[i]) + 4, 1) + '" text-anchor="end">' + pt[i] + '</text>';
+    }
+    for (i = 0; i < zt.length; i++) {
+      g += '<line class="s-grid" x1="' + n(cvx(zt[i]), 1) + '" y1="' + CV.y0 + '" x2="' + n(cvx(zt[i]), 1) + '" y2="' + CV.y1 + '"/>';
+      g += '<text class="t-small" x="' + n(cvx(zt[i]), 1) + '" y="' + (CV.y1 + 18) + '" text-anchor="middle">' + zt[i] + '</text>';
+    }
+    g += '<line class="s-axis" stroke-width="1.4" x1="' + CV.x0 + '" y1="' + CV.y0 + '" x2="' + CV.x0 + '" y2="' + CV.y1 + '"/>';
+    g += '<line class="s-axis" stroke-width="1.4" x1="' + CV.x0 + '" y1="' + CV.y1 + '" x2="' + CV.x1 + '" y2="' + CV.y1 + '"/>';
+    g += '<text class="t-lbl" x="' + CV.x1 + '" y="' + (CV.y1 + 36) + '" text-anchor="end">マーカーまでの距離 Z ［m］</text>';
+    g += '<text class="t-lbl" x="' + (CV.x0 + 6) + '" y="' + (CV.y0 - 10) + '">p ［px］</text>';
+
+    var d = '', started = false;
+    for (var z = CV.zmin; z <= CV.zmax + 1e-9; z += 0.01) {
+      var p = K / z;
+      if (p > CV.pmax) { started = false; continue; }
+      d += (started ? ' L ' : ' M ') + n(cvx(z), 1) + ' ' + n(cvy(p), 1);
+      started = true;
+    }
+    g += '<path class="s-ray" stroke-width="2.2" d="' + d + '"/>';
+
+    var Z = st.Z, P = K / Z;
+    if (P <= CV.pmax) {
+      g += '<line class="s-dim" stroke-dasharray="3 3" x1="' + n(cvx(Z), 1) + '" y1="' + n(cvy(P), 1) + '" x2="' + n(cvx(Z), 1) + '" y2="' + CV.y1 + '"/>';
+      g += '<line class="s-dim" stroke-dasharray="3 3" x1="' + CV.x0 + '" y1="' + n(cvy(P), 1) + '" x2="' + n(cvx(Z), 1) + '" y2="' + n(cvy(P), 1) + '"/>';
+      g += '<circle class="f-ray" cx="' + n(cvx(Z), 1) + '" cy="' + n(cvy(P), 1) + '" r="5"/>';
+      var anch = cvx(Z) > CV.x1 - 200 ? 'end' : 'start';
+      g += '<text class="t-key" x="' + n(cvx(Z) + (anch === 'end' ? -12 : 12), 1) + '" y="' + n(cvy(P) - 10, 1) +
+           '" text-anchor="' + anch + '">Z ' + n(Z, 2) + ' m → p ' + n(P, 1) + ' px</text>';
+    }
+
+    // ±1 px bands projected back onto the Z axis
+    var band = CV.y1 + 66;
+    g += '<text class="t-small" x="' + (CV.x0 - 10) + '" y="' + (band + 4) + '" text-anchor="end">±1 px</text>';
+    var samples = [0.5, 1, 1.5, 2, 3, 4, 5];
+    for (i = 0; i < samples.length; i++) {
+      var zs = samples[i];
+      if (zs < CV.zmin || zs > CV.zmax) continue;
+      var ps = K / zs;
+      if (ps <= 2) continue;
+      var zlo = K / (ps + 1), zhi = K / (ps - 1);
+      var xa = cvx(Math.max(zlo, CV.zmin)), xb = cvx(Math.min(zhi, CV.zmax));
+      var w = Math.max(xb - xa, 1.5);
+      g += '<rect class="f-ray" opacity="0.8" x="' + n(xa, 1) + '" y="' + (band - 6) + '" width="' + n(w, 1) + '" height="12"/>';
+      g += '<text class="t-small" x="' + n((xa + xb) / 2, 1) + '" y="' + (band + 26) + '" text-anchor="middle">±' +
+             n((zhi - zlo) / 2 * 100, 1) + ' cm</text>';
+    }
+
+    el('curve').innerHTML =
+      '<svg viewBox="0 0 900 412" role="img" aria-label="距離に対する見かけの大きさの反比例カーブ、および1ピクセル誤差に対応する距離の幅">' + g + '</svg>';
+    el('curve-note').innerHTML = 'f<sub>x</sub> · L = ' + n(K, 1) + ' px·m';
+
+    var rows = '', tz = [0.5, 1.0, 2.0, 3.0, 4.0];
+    for (i = 0; i < tz.length; i++) {
+      var z2 = tz[i], p2 = K / z2, dz = z2 / p2 * 100;
+      rows += '<tr><td>' + n(z2, 1) + ' m</td><td>' + n(p2, 1) + ' px</td>' +
+              '<td><span class="' + (dz > 10 ? 'bad' : 'good') + '">± ' + n(dz, 2) + ' cm</span></td></tr>';
+    }
+    el('err-body').innerHTML = rows;
+  }
+
+  // ================= FIG 3 =================
+  var TZ = 1.0, TL = 0.100, TFX = 800;
+  var S = 700;   // isotropic: same px-per-metre horizontally and vertically
+
+  function drawTopView() {
+    var th = st.th, t = th * Math.PI / 180, c = Math.cos(t), s = Math.sin(t), h = TL / 2;
+
+    var zr = TZ - s * h, xr = c * h;    // right edge of the marker
+    var zl = TZ + s * h, xl = -c * h;   // left edge
+    var Rx = zr * S, Ry = -xr * S;
+    var Lx = zl * S, Ly = -xl * S;
+    var Cx = TZ * S;
+
+    var g = defs('t');
+
+    g += '<line class="s-axis" x1="-30" y1="0" x2="800" y2="0" stroke-dasharray="16 4 2 4"/>';
+    g += '<text class="t-small" x="798" y="-9" text-anchor="end">光軸</text>';
+
+    // camera
+    g += '<path class="s-body" stroke-width="2" d="M -30 -24 L 4 -24 L 4 24 L -30 24 Z"/>';
+    g += '<path class="s-body" stroke-width="2" d="M 4 -12 L 20 -21 L 20 21 L 4 12 Z"/>';
+    g += '<circle class="f-ink" cx="20" cy="0" r="2.8"/>';
+    g += '<text class="t-lbl" x="-5" y="44" text-anchor="middle">カメラ</text>';
+
+    // frontal reference plane
+    g += '<line class="s-grid" stroke-dasharray="4 4" x1="' + Cx + '" y1="-62" x2="' + Cx + '" y2="62"/>';
+    g += '<text class="t-small" x="' + (Cx - 10) + '" y="92" text-anchor="end">正対したときの面</text>';
+
+    g += ray('t', Rx, Ry, 20, 0);
+    g += ray('t', Lx, Ly, 20, 0);
+
+    // the marker, seen edge-on
+    g += '<line class="s-body" stroke-width="6" x1="' + n(Rx, 1) + '" y1="' + n(Ry, 1) + '" x2="' + n(Lx, 1) + '" y2="' + n(Ly, 1) + '"/>';
+    g += '<circle class="f-ray" cx="' + n(Rx, 1) + '" cy="' + n(Ry, 1) + '" r="4.5"/>';
+    g += '<circle class="f-ray" cx="' + n(Lx, 1) + '" cy="' + n(Ly, 1) + '" r="4.5"/>';
+
+    g += '<text class="t-key" x="' + n(Rx + 15, 1) + '" y="' + n(Ry - 12, 1) + '">右端 ' + n(zr, 3) + ' m</text>';
+    g += '<text class="t-small" x="' + n(Rx + 15, 1) + '" y="' + n(Ry + 4, 1) + '">画像の右側</text>';
+    g += '<text class="t-key" x="' + n(Lx + 15, 1) + '" y="' + n(Ly + 18, 1) + '">左端 ' + n(zl, 3) + ' m</text>';
+    g += '<text class="t-small" x="' + n(Lx + 15, 1) + '" y="' + n(Ly + 34, 1) + '">画像の左側</text>';
+
+    // tilt angle arc, measured from the frontal plane
+    if (th >= 1) {
+      var R0 = 52;
+      var ax = Cx - s * R0, ay = -c * R0;
+      g += '<path class="s-dim" stroke-dasharray="3 3" fill="none" d="M ' + Cx + ' ' + (-R0) +
+           ' A ' + R0 + ' ' + R0 + ' 0 0 0 ' + n(ax, 1) + ' ' + n(ay, 1) + '"/>';
+      var lt = t / 2;
+      g += '<text class="t-dim" x="' + n(Cx - Math.sin(lt) * (R0 + 20), 1) + '" y="' + n(-Math.cos(lt) * (R0 + 20) - 4, 1) +
+           '" text-anchor="middle">θ = ' + th + '°</text>';
+    }
+
+    // depth difference between the two edges
+    if (th >= 2) {
+      g += '<line class="s-dim" stroke-dasharray="3 3" x1="' + n(Rx, 1) + '" y1="' + n(Ry, 1) + '" x2="' + n(Rx, 1) + '" y2="100"/>';
+      g += '<line class="s-dim" stroke-dasharray="3 3" x1="' + n(Lx, 1) + '" y1="' + n(Ly, 1) + '" x2="' + n(Lx, 1) + '" y2="100"/>';
+      g += dimH('t', Rx, Lx, 108, '奥行きの差 ' + n(2 * s * h * 100, 1) + ' cm');
+    }
+
+    g += dimH('t', 20, Cx, 152, '中心までの距離 Z = ' + n(TZ, 3) + ' m');
+
+    el('topview').innerHTML =
+      '<svg viewBox="-45 -115 890 300" role="img" aria-label="傾いたマーカーを上から見た図。右端と左端でカメラからの距離が異なる">' + g + '</svg>';
+  }
+
+  function drawTilt() {
+    var th = st.th, t = th * Math.PI / 180, c = Math.cos(t), s = Math.sin(t), h = TL / 2;
+
+    var extra = function (c0, c1, c2, c3) {
+      var o = 5;   // sit the marks just outside the marker, not on top of its border
+      return '<line stroke="#C26C15" stroke-width="4" x1="' + n(c0.u - o, 1) + '" y1="' + n(c0.v, 1) + '" x2="' + n(c3.u - o, 1) + '" y2="' + n(c3.v, 1) + '"/>' +
+             '<line stroke="#2E7D9A" stroke-width="4" x1="' + n(c1.u + o, 1) + '" y1="' + n(c1.v, 1) + '" x2="' + n(c2.u + o, 1) + '" y2="' + n(c2.v, 1) + '"/>';
+    };
+    el('tiltpreview').innerHTML = imagePanel(TZ, TFX, th, TL, 'tv', extra, { x: 200, y: 150, w: 240, h: 180 });
+
+    var pL = TFX * TL / (TZ + s * h);                                     // left edge, vertical
+    var pR = TFX * TL / (TZ - s * h);                                     // right edge, vertical
+    var pT = (TFX * c * h) / (TZ - s * h) + (TFX * c * h) / (TZ + s * h); // top edge, horizontal
+
+    var zL = TFX * TL / pL, zR = TFX * TL / pR, zT = TFX * TL / pT;
+    var errT = (zT - TZ) / TZ * 100;
+
+    function row(name, sw, px, z, verdict) {
+      return '<tr><td><span class="swatch" style="background:' + (sw || 'transparent') + '"></span>' + name + '</td>' +
+        '<td>' + n(px, 1) + ' px</td><td>' + n(z, 3) + ' m</td>' +
+        '<td class="verdict">' + verdict + '</td></tr>';
+    }
+
+    el('tilt-body').innerHTML =
+      row('左辺（縦）', '#C26C15', pL, zL, '<span class="good">左端までの距離 ' + n(TZ + s * h, 3) + ' m に一致</span>') +
+      row('右辺（縦）', '#2E7D9A', pR, zR, '<span class="good">右端までの距離 ' + n(TZ - s * h, 3) + ' m に一致</span>') +
+      row('上辺（横）', null, pT, zT,
+        (Math.abs(errT) < 0.05
+          ? '<span class="good">中心までの距離に一致</span>'
+          : '<span class="bad">どこの距離でもない — 真値より ' + n(errT, 1) + ' % 遠い</span>'));
+  }
+
+  // ---------- wiring ----------
+  function renderMain() {
+    el('v-Z').textContent = n(st.Z, 2) + ' m';
+    el('v-L').textContent = n(st.L, 3) + ' m';
+    el('v-fx').textContent = Math.round(st.fx) + ' px';
+    el('e-Z').textContent = n(st.Z, 2);
+    el('e-L').textContent = n(st.L, 3);
+    el('e-fx').textContent = Math.round(st.fx);
+    el('e-p').textContent = n(st.fx * st.L / st.Z, 1) + ' px';
+    drawBench();
+    drawPreview();
+    drawCurve();
+  }
+
+  function renderTilt() {
+    el('v-th').textContent = st.th + '°';
+    drawTopView();
+    drawTilt();
+  }
+
+  el('s-Z').addEventListener('input', function (e) { st.Z = parseFloat(e.target.value); renderMain(); });
+  el('s-L').addEventListener('input', function (e) { st.L = parseFloat(e.target.value); renderMain(); });
+  el('s-fx').addEventListener('input', function (e) { st.fx = parseFloat(e.target.value); renderMain(); });
+  el('s-th').addEventListener('input', function (e) { st.th = parseFloat(e.target.value); renderTilt(); });
+
+  renderMain();
+  renderTilt();
+})();
+</script>
+
+</body>
+</html>
