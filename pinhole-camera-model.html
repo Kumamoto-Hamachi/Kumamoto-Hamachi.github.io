@@ -671,6 +671,8 @@
         <div class="derive-step">
           <span class="label">3　小さな誤差として近似する</span>
           <p><em>|δp|</em> が <em>p</em> より十分小さければ、<em>p + δp ≈ p</em> とみなせます。</p>
+          <div class="mathline">δZ ≈ −K/p² · δp</div>
+          <p>誤差の大きさだけを考えるため、両辺の絶対値を取ります。</p>
           <div class="mathline approx">|δZ| ≈ K/p² · |δp|</div>
           <div class="mathline approx">　　 = Z/p · |δp|</div>
           <div class="mathline approx">　　 = Z²/(f<sub>x</sub>L) · |δp|</div>
@@ -679,7 +681,7 @@
 
       <p class="afterword">
         真ん中の式にあるマイナス符号は、<em>p</em> を大きく測るほど推定距離が小さくなることを表します。
-        上の表と最初の近似式では誤差の大きさだけを扱うため、この符号を外して <em>Δp</em> と <em>ΔZ</em> で表しています。
+        上の表と絶対値を使った近似式では誤差の大きさだけを扱うため、マイナス符号は現れません。
       </p>
 
       <div class="example-grid" id="error-examples"></div>
