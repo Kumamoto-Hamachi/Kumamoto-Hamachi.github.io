@@ -1,0 +1,1 @@
+# Kumamoto-Hamachi.github.io
