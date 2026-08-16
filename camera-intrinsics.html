@@ -227,6 +227,22 @@
   svg { display: block; width: 100%; height: auto; }
   svg text { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
+  .scene3d-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 20px;
+    align-items: center;
+  }
+  @media (max-width: 780px) { .scene3d-grid { grid-template-columns: 1fr; } }
+
+  .panel-cap {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .12em;
+    color: var(--muted);
+    padding-bottom: 8px;
+  }
+
   /* ---------- pipeline ---------- */
 
   .pipe {
@@ -601,6 +617,68 @@
       （R<sup>T</sup> は R の行と列を入れ替えた「転置行列」です）。
       solvePnP の結果を読むときに取り違えやすい点なので、先にここで区別しておきます。
     </p>
+
+    <p class="prose">
+      文章だけでは位置関係を想像しにくいので、三つの座標系が空間のどこにあるのかを 1 枚の絵にまとめます。
+      左の 3D 図は、カメラにも世界にも属さない第三者の視点から眺めた配置図です。
+      スライダーで眺める角度を変えながら、右のカメラ画像と見比べてください。
+    </p>
+
+    <div class="fig" id="fig-scene3d">
+      <div class="fig-bar">
+        <b>FIG. 2</b><span>三つの座標系を一望する</span>
+        <span class="note">この図も u = f·X/Z + c で描画</span>
+      </div>
+      <div class="fig-body">
+        <div class="scene3d-grid">
+          <div>
+            <div class="panel-cap">3D シーン — 第三者の視点（スライダーで回転）</div>
+            <div id="c3scene"></div>
+          </div>
+          <div>
+            <div class="panel-cap">カメラが写す画像 — 視点を回しても不変</div>
+            <div id="c3image"></div>
+          </div>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="ctrl">
+          <div class="ctrl-head"><span class="nm">視点の方位角</span><span class="vl" id="v-az">60°</span></div>
+          <input type="range" id="s-az" min="30" max="90" step="1" value="60" aria-label="3D 図を眺める方位角">
+          <div class="ctrl-scale"><span>30°（後ろ寄り）</span><span>90°（真横）</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="readout">
+      <div class="eqbox">
+        <div class="legend" style="padding-bottom:6px">
+          <span><span class="swatch" style="background:var(--ok)"></span>世界座標系（マーカー中心を原点に採用）</span>
+          <span><span class="swatch" style="background:var(--tri)"></span>カメラ座標系（原点はピンホール）</span>
+          <span><span class="swatch" style="background:var(--ray)"></span>光線と像</span>
+        </div>
+        <p class="eq-note">
+          配置は本文の計算例と同じで、カメラの 0.5 m 先に一辺 0.1 m のマーカーが正対しています。
+          右下の隅 <em>(0.05, 0.05, 0.5)</em> とピンホールを結ぶ視線を延長すると（破線）、
+          Z<sub>c</sub> = 1 に置いた仮想スクリーンを <em>(0.1, 0.1)</em> で貫きます。
+          これが後半の STEP 1 で計算する正規化画像座標です。
+          マーカーがスクリーンより手前にあるぶん、スクリーン上の像は実物より大きくなることにも注目してください。
+          x′ = 0.05 ÷ 0.5 = 0.1 という割り算は、この相似拡大のことです。
+          方位角を 90° まで回すと、前のページの側面図とほぼ同じ構図になります。
+        </p>
+      </div>
+      <div class="eqbox">
+        <p class="eq-note">
+          <strong>視点をどれだけ回しても、右のカメラ画像は 1 px も動きません。</strong>
+          ピクセル座標を決めるのはカメラとマーカーの位置関係だけで、
+          図を眺める私たちの角度は計算のどこにも登場しないからです。<br><br>
+          種明かしをすると、この 3D 図は 3D ライブラリを使わず、このページの式だけで描いています。
+          シーンの各点を「視点カメラ」の座標系に回転してから <em>u = f·X/Z + c<sub>x</sub></em> で投影する——
+          スライダーが取り替えているのは、まさに回転行列 R です。
+        </p>
+      </div>
+    </div>
+
     <p class="prose">
       一方、二番目の矢印を受け持つ f<sub>x</sub>, f<sub>y</sub>, c<sub>x</sub>, c<sub>y</sub> と歪み係数は、
       レンズとセンサの作りだけで決まる数なので、カメラをどこへ動かしても変わりません。
@@ -878,7 +956,7 @@
 
     <div class="fig">
       <div class="fig-bar">
-        <b>FIG. 2</b><span>K の 4 つの数を動かす</span>
+        <b>FIG. 3</b><span>K の 4 つの数を動かす</span>
         <span class="note">0.5 m 先の一辺 0.1 m のマーカー（正対・4 隅を投影）</span>
       </div>
       <div class="fig-body"><div id="kview"></div></div>
@@ -941,7 +1019,7 @@
     </div>
 
     <div class="fig">
-      <div class="fig-bar"><b>FIG. 3</b><span>歪みを含めた完全なパイプライン</span></div>
+      <div class="fig-bar"><b>FIG. 4</b><span>歪みを含めた完全なパイプライン</span></div>
       <div class="fig-body">
         <div class="pipe">
           <div class="pipe-box">カメラ座標<br>(X<sub>c</sub>, Y<sub>c</sub>, Z<sub>c</sub>)</div>
@@ -1010,7 +1088,7 @@
 
     <div class="fig">
       <div class="fig-bar">
-        <b>FIG. 4</b><span>歪み係数とグリッドの変形</span>
+        <b>FIG. 5</b><span>歪み係数とグリッドの変形</span>
         <span class="note" id="dist-note"></span>
       </div>
       <div class="fig-body"><div id="dview"></div></div>
@@ -1177,7 +1255,146 @@
     return '<svg viewBox="-8 -8 656 496" role="img" aria-label="カメラ画像のシミュレーション">' + g + '</svg>';
   }
 
-  // ================= FIG 2: play with K =================
+  // ================= FIG 2: 三つの座標系の 3D 図 =================
+  // 3D ライブラリは使わない。シーンの各点を視点カメラの座標系へ回転し、
+  // 本文と同じ式 u = F·x/z + C で SVG に投影して描く。
+  var az = 60;                        // 視点の方位角（度・スライダーで変更）
+  var V_B = 18 * Math.PI / 180;       // 見下ろし角（固定）
+  var V_D = 3.2;                      // 注視点から視点カメラまでの距離 m
+  var V_F = 950, V_CX = 292, V_CY = 190; // 視点カメラの焦点距離と主点（px 相当）
+  var LOOK = [0, 0.02, 0.55];         // 注視点（カメラとスクリーンの中間あたり）
+
+  function p3(p) {
+    var a = az * Math.PI / 180;
+    var x = p[0] - LOOK[0], y = p[1] - LOOK[1], z = p[2] - LOOK[2];
+    var x1 = Math.cos(a) * x + Math.sin(a) * z;              // ヨー回転（縦軸まわり）
+    var z1 = -Math.sin(a) * x + Math.cos(a) * z;
+    var y2 = Math.cos(V_B) * y - Math.sin(V_B) * z1;         // ピッチ回転（横軸まわり）
+    var z2 = Math.sin(V_B) * y + Math.cos(V_B) * z1 + V_D;
+    return [V_F * x1 / z2 + V_CX, V_F * y2 / z2 + V_CY];     // u = F·x/z + C そのもの
+  }
+
+  function ln3(a, b, attrs) {
+    var p = p3(a), q = p3(b);
+    return '<line x1="' + n(p[0], 1) + '" y1="' + n(p[1], 1) +
+           '" x2="' + n(q[0], 1) + '" y2="' + n(q[1], 1) + '" ' + attrs + '/>';
+  }
+
+  function poly3(pts, attrs) {
+    var s = '', i, q;
+    for (i = 0; i < pts.length; i++) {
+      q = p3(pts[i]);
+      s += n(q[0], 1) + ',' + n(q[1], 1) + ' ';
+    }
+    return '<polygon points="' + s + '" ' + attrs + '/>';
+  }
+
+  function arrow3(a, b, color, label, perp) {
+    var p = p3(a), q = p3(b);
+    var dx = q[0] - p[0], dy = q[1] - p[1], L = Math.sqrt(dx * dx + dy * dy);
+    var s = '<line x1="' + n(p[0], 1) + '" y1="' + n(p[1], 1) +
+            '" x2="' + n(q[0], 1) + '" y2="' + n(q[1], 1) +
+            '" stroke="' + color + '" stroke-width="2"/>';
+    if (L > 4) {
+      var ux = dx / L, uy = dy / L, pp = perp || 0;
+      s += '<path fill="none" stroke="' + color + '" stroke-width="2" d="M ' +
+           n(q[0] - 7 * ux + 3.5 * uy, 1) + ' ' + n(q[1] - 7 * uy - 3.5 * ux, 1) + ' L ' +
+           n(q[0], 1) + ' ' + n(q[1], 1) + ' L ' +
+           n(q[0] - 7 * ux - 3.5 * uy, 1) + ' ' + n(q[1] - 7 * uy + 3.5 * ux, 1) + '"/>';
+      s += '<text x="' + n(q[0] + 16 * ux - pp * uy, 1) + '" y="' + n(q[1] + 16 * uy + pp * ux + 4, 1) +
+           '" font-size="12" text-anchor="middle" fill="' + color + '">' + label + '</text>';
+    }
+    return s;
+  }
+
+  function drawScene() {
+    var O = [0, 0, 0], M = [0, 0, 0.5];
+    var mk = [[-0.05, -0.05, 0.5], [0.05, -0.05, 0.5], [0.05, 0.05, 0.5], [-0.05, 0.05, 0.5]];
+    var g = '', i;
+
+    // 光軸（点線）とスクリーン中心の十字
+    g += ln3(O, [0, 0, 1.12], 'stroke="var(--line)" stroke-width="1" stroke-dasharray="2 4"');
+    g += poly3([[-0.4, -0.3, 1], [0.4, -0.3, 1], [0.4, 0.3, 1], [-0.4, 0.3, 1]],
+               'fill="var(--surface)" fill-opacity=".55" stroke="var(--line)" stroke-width="1.2"');
+    g += ln3([-0.025, 0, 1], [0.025, 0, 1], 'stroke="var(--muted)" stroke-width="1.5"');
+    g += ln3([0, -0.025, 1], [0, 0.025, 1], 'stroke="var(--muted)" stroke-width="1.5"');
+
+    // スクリーン上のマーカー像（Z=1 平面との交点。0.5 m 先なので 2 倍に写る）
+    g += poly3([[-0.1, -0.1, 1], [0.1, -0.1, 1], [0.1, 0.1, 1], [-0.1, 0.1, 1]],
+               'fill="none" stroke="var(--ray)" stroke-width="1.5" opacity=".85"');
+
+    // 4 隅からピンホールへ集まる光線（薄く）
+    for (i = 0; i < 4; i++) g += ln3(mk[i], O, 'stroke="var(--line)" stroke-width="1"');
+
+    // 主役の光線：右下の隅 → ピンホール、延長線がスクリーンを貫く
+    g += ln3(O, mk[2], 'stroke="var(--ray)" stroke-width="2"');
+    g += ln3(mk[2], [0.1, 0.1, 1], 'stroke="var(--ray)" stroke-width="1.8" stroke-dasharray="5 3"');
+
+    // マーカー本体（実物の白いボードとして描く）
+    g += poly3(mk, 'fill="#FFFFFF" stroke="#98A1AC" stroke-width="1.5"');
+
+    // 世界座標系（マーカー中心・Y は上向き・Z はカメラ向き = ArUco の習慣）
+    g += arrow3(M, [0.09, 0, 0.5], 'var(--ok)', 'X', -14);
+    g += arrow3(M, [0, -0.09, 0.5], 'var(--ok)', 'Y', 0);
+    g += arrow3(M, [0, 0, 0.41], 'var(--ok)', 'Z', -11);
+
+    // カメラ筐体（ピンホールが前面の中心）
+    var bx = [-0.09, 0.09], by = [-0.065, 0.065], bz = [-0.13, 0], e = 'stroke="var(--line)" stroke-width="1.2"';
+    for (i = 0; i < 4; i++) {
+      var cx0 = bx[i & 1], cy0 = by[i >> 1];
+      g += ln3([cx0, cy0, bz[0]], [cx0, cy0, bz[1]], e);
+    }
+    for (i = 0; i < 2; i++) {
+      g += ln3([bx[0], by[0], bz[i]], [bx[1], by[0], bz[i]], e);
+      g += ln3([bx[0], by[1], bz[i]], [bx[1], by[1], bz[i]], e);
+      g += ln3([bx[0], by[0], bz[i]], [bx[0], by[1], bz[i]], e);
+      g += ln3([bx[1], by[0], bz[i]], [bx[1], by[1], bz[i]], e);
+    }
+
+    // カメラ座標系（X 右・Y 下・Z 前方 = OpenCV の規約）
+    var sub = '<tspan dy="3.5" font-size="9">c</tspan>';
+    g += arrow3(O, [0.17, 0, 0], 'var(--tri)', 'X' + sub, 0);
+    g += arrow3(O, [0, 0.17, 0], 'var(--tri)', 'Y' + sub, 0);
+    g += arrow3(O, [0, 0, 0.26], 'var(--tri)', 'Z' + sub, -11);
+
+    // ピンホール
+    var o2 = p3(O);
+    g += '<circle cx="' + n(o2[0], 1) + '" cy="' + n(o2[1], 1) + '" r="3.5" fill="var(--ink)"/>';
+    g += '<text x="' + n(o2[0] - 12, 1) + '" y="' + n(o2[1] + 4, 1) +
+         '" font-size="12" text-anchor="end" fill="var(--ink-2)">ピンホール</text>';
+
+    // 右下の隅と、スクリーン上の対応点
+    var c2 = p3(mk[2]), np = p3([0.1, 0.1, 1]);
+    g += '<circle cx="' + n(c2[0], 1) + '" cy="' + n(c2[1], 1) + '" r="4.5" fill="var(--ray)"/>';
+    g += '<text x="' + n(c2[0], 1) + '" y="' + n(c2[1] + 24, 1) +
+         '" font-size="12" text-anchor="middle" fill="var(--ray)">(0.05, 0.05, 0.5)</text>';
+    g += '<circle cx="' + n(np[0], 1) + '" cy="' + n(np[1], 1) + '" r="4" fill="var(--ray)"/>';
+    g += '<text x="' + n(np[0] + 12, 1) + '" y="' + n(np[1] + 4, 1) +
+         '" font-size="12" fill="var(--ray)">(x′, y′) = (0.1, 0.1)</text>';
+
+    // スクリーンのラベル（上辺の中点の少し上）
+    var s1 = p3([-0.4, -0.3, 1]), s2 = p3([0.4, -0.3, 1]);
+    g += '<text x="' + n((s1[0] + s2[0]) / 2, 1) + '" y="' + n(Math.min(s1[1], s2[1]) - 10, 1) +
+         '" font-size="12" text-anchor="middle" fill="var(--muted)">仮想スクリーン Z' + sub +
+         '<tspan dy="-3.5"> = 1</tspan></text>';
+
+    el('c3scene').innerHTML =
+      '<svg viewBox="0 38 640 302" role="img" aria-label="三つの座標系の 3D 配置図">' + g + '</svg>';
+  }
+
+  function drawCamPanel() {
+    var inner = '<polygon fill="#FFFFFF" stroke="#C26C15" stroke-width="2.5" points="240,160 400,160 400,320 240,320"/>';
+    var cs = [[240, 160], [400, 160], [240, 320]], i;
+    for (i = 0; i < 3; i++) {
+      inner += '<circle cx="' + cs[i][0] + '" cy="' + cs[i][1] + '" r="4.5" fill="#C26C15"/>';
+    }
+    inner += '<circle cx="400" cy="320" r="6" fill="#C26C15"/>';
+    inner += '<text x="412" y="344" font-size="14" font-weight="600" fill="#C26C15">(u, v) = (400, 320)</text>';
+    inner += '<path stroke="#5B6572" stroke-width="2" fill="none" d="M 308 240 H 332 M 320 228 V 252"/>';
+    el('c3image').innerHTML = frame(inner, 'c3');
+  }
+
+  // ================= FIG 3: play with K =================
   var kst = { fx: 800, fy: 800, cx: 320, cy: 240 };
   var KZ = 0.5, KH = 0.05; // marker at 0.5 m, half-size 0.05 m
 
@@ -1222,7 +1439,7 @@
       (out ? ' <b style="color:var(--warn)">一部が画面の外にはみ出しています。</b>' : '') + '</div>';
   }
 
-  // ================= FIG 4: distortion =================
+  // ================= FIG 5: distortion =================
   var dst = { k1: -0.20, k2: 0 };
   var DFX = 800, DCX = 320, DCY = 240;
   var GX = 0.4, GY = 0.3; // grid half-extents in normalized coords
@@ -1304,6 +1521,7 @@
     el(id).addEventListener('input', function (e) { fn(parseFloat(e.target.value)); });
   }
 
+  bind('s-az', function (x) { az = x; el('v-az').textContent = Math.round(x) + '°'; drawScene(); });
   bind('s-kfx', function (x) { kst.fx = x; el('v-kfx').textContent = Math.round(x) + ' px'; drawK(); });
   bind('s-kfy', function (x) { kst.fy = x; el('v-kfy').textContent = Math.round(x) + ' px'; drawK(); });
   bind('s-kcx', function (x) { kst.cx = x; el('v-kcx').textContent = Math.round(x) + ' px'; drawK(); });
@@ -1311,6 +1529,8 @@
   bind('s-k1', function (x) { dst.k1 = x; el('v-k1').textContent = (x < 0 ? '−' : '') + n(Math.abs(x), 2); drawD(); });
   bind('s-k2', function (x) { dst.k2 = x; el('v-k2').textContent = (x < 0 ? '−' : '') + n(Math.abs(x), 2); drawD(); });
 
+  drawScene();
+  drawCamPanel();
   drawK();
   drawD();
 })();

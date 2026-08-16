@@ -1,0 +1,1134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="起伏のある砂地を走るローバーで、ArUcoマーカーから距離を推定するための図解ガイド。座標系、PnP、距離の種類、地面距離への変換、OpenCV実装を説明する。">
+<title>ArUcoでローバーの距離を測る</title>
+<style>
+  :root {
+    --ground: #e8ebef;
+    --surface: #f3f5f7;
+    --panel: #ffffff;
+    --ink: #17202b;
+    --ink-2: #465363;
+    --muted: #74808d;
+    --line: #c8cfd7;
+    --line-soft: #e1e5ea;
+    --blue: #176b87;
+    --blue-soft: #e5f2f6;
+    --orange: #bd6415;
+    --orange-soft: #fff0df;
+    --green: #397653;
+    --green-soft: #e8f3ec;
+    --red: #a73f3b;
+    --red-soft: #f9e9e8;
+    --violet: #6555a3;
+    --shadow: 0 14px 35px rgb(32 43 54 / 8%);
+    --serif: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif CJK JP", serif;
+    --sans: "Hiragino Sans", "Noto Sans CJK JP", "Yu Gothic", YuGothic, Meiryo, system-ui, sans-serif;
+    --mono: ui-monospace, "SFMono-Regular", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #10161d;
+    --surface: #171e27;
+    --panel: #1c2530;
+    --ink: #e6ebf1;
+    --ink-2: #b4bfcb;
+    --muted: #8793a0;
+    --line: #3b4653;
+    --line-soft: #2a3440;
+    --blue: #69bad2;
+    --blue-soft: #173640;
+    --orange: #f0aa63;
+    --orange-soft: #402c1b;
+    --green: #83c59a;
+    --green-soft: #203b2a;
+    --red: #ed8c86;
+    --red-soft: #412525;
+    --violet: #b2a4ed;
+    --shadow: 0 14px 35px rgb(0 0 0 / 25%);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #10161d;
+      --surface: #171e27;
+      --panel: #1c2530;
+      --ink: #e6ebf1;
+      --ink-2: #b4bfcb;
+      --muted: #8793a0;
+      --line: #3b4653;
+      --line-soft: #2a3440;
+      --blue: #69bad2;
+      --blue-soft: #173640;
+      --orange: #f0aa63;
+      --orange-soft: #402c1b;
+      --green: #83c59a;
+      --green-soft: #203b2a;
+      --red: #ed8c86;
+      --red-soft: #412525;
+      --violet: #b2a4ed;
+      --shadow: 0 14px 35px rgb(0 0 0 / 25%);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--blue); text-underline-offset: .18em; }
+  a:hover { text-decoration-thickness: 2px; }
+  button, input { font: inherit; }
+
+  .page {
+    width: min(1160px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 34px 0 96px;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 54px;
+  }
+
+  .brand {
+    color: var(--muted);
+    font: 700 11px/1 var(--mono);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  .theme-button {
+    padding: 7px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+
+  header {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(330px, .95fr);
+    gap: clamp(32px, 6vw, 72px);
+    align-items: center;
+    margin-bottom: 72px;
+  }
+
+  h1, h2, h3 { font-family: var(--serif); }
+
+  h1 {
+    margin: 0 0 22px;
+    font-size: clamp(34px, 5vw, 58px);
+    line-height: 1.25;
+    letter-spacing: .02em;
+    text-wrap: balance;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: clamp(25px, 3.2vw, 34px);
+    line-height: 1.45;
+    letter-spacing: .02em;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 21px;
+    line-height: 1.5;
+  }
+
+  p { margin: 0; }
+  strong { font-weight: 700; }
+  var { font-family: var(--serif); }
+
+  .lede {
+    max-width: 42em;
+    color: var(--ink-2);
+    font-size: 17px;
+  }
+
+  .verdict {
+    margin-top: 26px;
+    padding: 18px 20px;
+    border-left: 4px solid var(--green);
+    background: var(--green-soft);
+    color: var(--ink);
+  }
+
+  .hero-figure, .figure {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .figure-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--surface);
+    color: var(--muted);
+    font: 700 11px/1.5 var(--mono);
+    letter-spacing: .08em;
+  }
+
+  .figure-body { padding: clamp(14px, 2.6vw, 28px); }
+  svg { display: block; width: 100%; height: auto; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 225px minmax(0, 1fr);
+    gap: clamp(32px, 6vw, 76px);
+    align-items: start;
+  }
+
+  nav {
+    position: sticky;
+    top: 24px;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+
+  nav p {
+    margin-bottom: 10px;
+    color: var(--muted);
+    font: 700 11px/1.4 var(--mono);
+    letter-spacing: .12em;
+  }
+
+  nav ol { margin: 0; padding-left: 22px; }
+  nav li { margin: 5px 0; color: var(--muted); }
+  nav a { color: var(--ink-2); text-decoration: none; }
+  nav a:hover { color: var(--blue); text-decoration: underline; }
+
+  main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 82px;
+  }
+
+  section { scroll-margin-top: 24px; }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .section-no {
+    color: var(--orange);
+    font: 700 11px/1 var(--mono);
+    letter-spacing: .14em;
+  }
+
+  .prose {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 48em;
+    color: var(--ink-2);
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 24px;
+  }
+
+  .card {
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel);
+  }
+
+  .card .tag {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    color: var(--green);
+    background: var(--green-soft);
+    font: 700 11px/1.5 var(--mono);
+  }
+
+  .card .tag.caution { color: var(--red); background: var(--red-soft); }
+  .card h3 { margin-bottom: 8px; }
+  .card p { color: var(--ink-2); font-size: 14px; }
+
+  .table-wrap {
+    margin-top: 24px;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 680px;
+    font-size: 14px;
+  }
+
+  th, td {
+    padding: 13px 15px;
+    border-bottom: 1px solid var(--line-soft);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th { background: var(--surface); color: var(--ink); font-weight: 700; }
+  td { color: var(--ink-2); }
+  tr:last-child td { border-bottom: 0; }
+  .yes { color: var(--green); font-weight: 700; }
+  .conditional { color: var(--orange); font-weight: 700; }
+  .no { color: var(--red); font-weight: 700; }
+
+  .terms {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    margin-top: 24px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--line-soft);
+    overflow: hidden;
+  }
+
+  .term {
+    display: grid;
+    grid-template-columns: 62px 1fr;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--panel);
+  }
+
+  .term dt {
+    color: var(--orange);
+    font: 700 16px/1.5 var(--serif);
+  }
+
+  .term dd { margin: 0; color: var(--ink-2); font-size: 14px; }
+
+  .equation-card {
+    margin-top: 26px;
+    padding: clamp(18px, 3vw, 28px);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel);
+  }
+
+  .equation-card + .equation-card { margin-top: 16px; }
+
+  .eq-label {
+    margin-bottom: 14px;
+    color: var(--muted);
+    font: 700 11px/1 var(--mono);
+    letter-spacing: .1em;
+  }
+
+  .eq {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .45em;
+    overflow-x: auto;
+    padding: 3px 0;
+    color: var(--ink);
+    font: 500 clamp(16px, 2.4vw, 22px)/1.65 var(--serif);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .eq.small { font-size: clamp(14px, 2vw, 18px); }
+  .eq .op { color: var(--muted); }
+  .eq .result { color: var(--orange); font-weight: 700; }
+
+  .fraction {
+    display: inline-grid;
+    grid-template-rows: auto auto;
+    text-align: center;
+    line-height: 1.35;
+    vertical-align: middle;
+  }
+
+  .fraction > span:first-child { padding: 0 .35em .06em; border-bottom: 1px solid currentColor; }
+  .fraction > span:last-child { padding: .06em .35em 0; }
+
+  .matrix {
+    display: inline-grid;
+    position: relative;
+    grid-template-columns: repeat(3, auto);
+    gap: .03em .75em;
+    padding: .3em .65em;
+    line-height: 1.45;
+  }
+
+  .matrix.one { grid-template-columns: auto; }
+  .matrix::before, .matrix::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    width: .35em;
+    border-block: 1.5px solid currentColor;
+  }
+
+  .matrix::before { left: 0; border-left: 1.5px solid currentColor; }
+  .matrix::after { right: 0; border-right: 1.5px solid currentColor; }
+  .matrix span { text-align: center; }
+
+  .eq-explain {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line-soft);
+    color: var(--ink-2);
+    font-size: 14px;
+  }
+
+  .steps {
+    display: grid;
+    gap: 12px;
+    margin-top: 24px;
+    counter-reset: derivation;
+  }
+
+  .step {
+    position: relative;
+    padding: 18px 18px 18px 58px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel);
+    counter-increment: derivation;
+  }
+
+  .step::before {
+    content: counter(derivation);
+    position: absolute;
+    left: 17px;
+    top: 17px;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--orange-soft);
+    color: var(--orange);
+    font: 700 13px/1 var(--mono);
+  }
+
+  .step h3 { margin-bottom: 8px; font-size: 18px; }
+  .step p { color: var(--ink-2); font-size: 14px; }
+
+  .callout {
+    margin-top: 24px;
+    padding: 18px 20px;
+    border-left: 4px solid var(--blue);
+    background: var(--blue-soft);
+    color: var(--ink-2);
+  }
+
+  .callout.warning { border-color: var(--red); background: var(--red-soft); }
+  .callout strong { color: var(--ink); }
+
+  .calculator {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 24px;
+    padding: 22px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel);
+  }
+
+  .field label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--ink-2);
+    font-size: 13px;
+  }
+
+  .field input {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .results {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    margin-top: 5px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--line);
+    overflow: hidden;
+  }
+
+  .result-box { padding: 14px; background: var(--surface); }
+  .result-box span { display: block; color: var(--muted); font-size: 12px; }
+  .result-box output { color: var(--orange); font: 700 19px/1.5 var(--mono); }
+
+  pre {
+    margin: 24px 0 0;
+    padding: 20px;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #131a22;
+    color: #dce5ee;
+    font: 13px/1.7 var(--mono);
+    tab-size: 4;
+  }
+
+  code { font-family: var(--mono); }
+  .code-comment { color: #8298aa; }
+  .code-name { color: #8fd4e8; }
+  .code-value { color: #efb36f; }
+
+  .checklist {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .check {
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--panel);
+  }
+
+  .check b { display: block; margin-bottom: 5px; }
+  .check p { color: var(--ink-2); font-size: 14px; }
+
+  .sources {
+    margin: 24px 0 0;
+    padding-left: 22px;
+    color: var(--ink-2);
+  }
+
+  .sources li { margin: 12px 0; padding-left: 5px; }
+  .sources span { display: block; color: var(--muted); font-size: 13px; }
+
+  footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  @media (max-width: 860px) {
+    header { grid-template-columns: 1fr; }
+    .hero-figure { max-width: 620px; }
+    .layout { grid-template-columns: 1fr; }
+    nav { position: static; }
+    nav ol { columns: 2; }
+  }
+
+  @media (max-width: 620px) {
+    .page { width: min(100% - 22px, 1160px); }
+    .cards, .terms, .checklist { grid-template-columns: 1fr; }
+    .term { grid-template-columns: 50px 1fr; }
+    .calculator { grid-template-columns: 1fr; }
+    .results { grid-template-columns: 1fr; }
+    nav ol { columns: 1; }
+    .figure-head { flex-direction: column; }
+  }
+
+  @media print {
+    :root { --ground: #fff; --surface: #fff; --panel: #fff; --ink: #000; --ink-2: #222; --muted: #555; --line: #aaa; --line-soft: #ccc; }
+    .page { width: 100%; padding: 0; }
+    .topbar, nav, .calculator { display: none; }
+    header, .layout { display: block; }
+    main { display: block; }
+    section { break-inside: avoid; margin-top: 42px; }
+    .hero-figure, .figure { box-shadow: none; }
+    a { color: inherit; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <div class="brand">ROVER VISION GUIDE / ARUCO RANGE</div>
+    <button class="theme-button" id="themeButton" type="button" aria-label="表示テーマを切り替える">表示を切り替える</button>
+  </div>
+
+  <header>
+    <div>
+      <h1>ArUcoでローバーの距離を測る</h1>
+      <p class="lede">起伏のある砂地でカメラが傾いても、既知サイズのArUcoマーカーと校正済みカメラから、カメラとマーカーの相対位置を各フレームで推定できます。</p>
+      <div class="verdict"><strong>結論：</strong>カメラ中心からマーカー中心までの直線距離は推定できます。地面上の距離やローバー本体の位置には、追加の幾何情報が必要です。</div>
+    </div>
+
+    <figure class="hero-figure">
+      <div class="figure-head"><span>状況</span><span>カメラが傾いても相対姿勢を解き直す</span></div>
+      <div class="figure-body">
+        <svg viewBox="0 0 560 380" role="img" aria-labelledby="heroTitle heroDesc">
+          <title id="heroTitle">傾いたローバーとArUcoマーカー</title>
+          <desc id="heroDesc">起伏のある地面に傾いたローバーがあり、カメラから垂直な板上のArUcoマーカーへ直線距離dが引かれている。</desc>
+          <defs>
+            <marker id="arrowOrange" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="var(--orange)"/></marker>
+            <pattern id="sandDots" width="18" height="12" patternUnits="userSpaceOnUse"><circle cx="4" cy="5" r="1.2" fill="var(--muted)" opacity=".28"/><circle cx="14" cy="9" r=".8" fill="var(--muted)" opacity=".2"/></pattern>
+          </defs>
+          <path d="M18 315 C95 278 138 343 215 316 S350 292 408 318 S495 345 542 307 L542 375 L18 375 Z" fill="url(#sandDots)" stroke="var(--line)" stroke-width="2"/>
+          <g transform="translate(122 284) rotate(9)">
+            <rect x="-44" y="-35" width="132" height="48" rx="9" fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="3"/>
+            <circle cx="-16" cy="18" r="18" fill="var(--surface)" stroke="var(--ink-2)" stroke-width="4"/>
+            <circle cx="65" cy="18" r="18" fill="var(--surface)" stroke="var(--ink-2)" stroke-width="4"/>
+            <path d="M22 -35 L31 -72 L55 -72 L62 -34" fill="none" stroke="var(--ink-2)" stroke-width="5"/>
+            <g transform="translate(48 -77)">
+              <path d="M-24 -13 H11 L27 0 L11 13 H-24 Z" fill="var(--orange-soft)" stroke="var(--orange)" stroke-width="3"/>
+              <circle cx="12" cy="0" r="6" fill="var(--orange)"/>
+            </g>
+          </g>
+          <g>
+            <rect x="432" y="72" width="12" height="258" rx="3" fill="var(--ink-2)" opacity=".6"/>
+            <rect x="367" y="84" width="76" height="76" fill="white" stroke="var(--ink)" stroke-width="3"/>
+            <rect x="376" y="93" width="58" height="58" fill="var(--ink)"/>
+            <rect x="383" y="100" width="12" height="12" fill="white"/>
+            <rect x="415" y="100" width="12" height="12" fill="white"/>
+            <rect x="399" y="116" width="12" height="12" fill="white"/>
+            <rect x="383" y="132" width="20" height="12" fill="white"/>
+            <rect x="415" y="132" width="12" height="12" fill="white"/>
+            <text x="405" y="61" text-anchor="middle" fill="var(--ink)" font-family="var(--sans)" font-size="14">既知サイズ L</text>
+          </g>
+          <line x1="188" y1="198" x2="394" y2="132" stroke="var(--orange)" stroke-width="3" marker-end="url(#arrowOrange)"/>
+          <rect x="265" y="145" width="76" height="31" rx="15" fill="var(--panel)" stroke="var(--orange)"/>
+          <text x="303" y="166" text-anchor="middle" fill="var(--orange)" font-family="var(--serif)" font-size="17">距離 d</text>
+          <path d="M172 245 A45 45 0 0 1 204 217" fill="none" stroke="var(--violet)" stroke-width="2" stroke-dasharray="5 5"/>
+          <text x="124" y="221" fill="var(--violet)" font-family="var(--sans)" font-size="13">pitch / roll が変化</text>
+          <text x="94" y="354" fill="var(--muted)" font-family="var(--sans)" font-size="13">凹凸のある砂地</text>
+        </svg>
+      </div>
+    </figure>
+  </header>
+
+  <div class="layout">
+    <nav aria-label="目次">
+      <p>CONTENTS</p>
+      <ol>
+        <li><a href="#distances">距離を区別する</a></li>
+        <li><a href="#coordinates">座標系と記号</a></li>
+        <li><a href="#projection">画像への投影</a></li>
+        <li><a href="#pose">PnPの出力</a></li>
+        <li><a href="#distance">距離の計算</a></li>
+        <li><a href="#ground">地面距離への変換</a></li>
+        <li><a href="#implementation">OpenCV実装</a></li>
+        <li><a href="#field">砂地での精度</a></li>
+        <li><a href="#sources">参照資料</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="distances">
+        <div class="section-head">
+          <span class="section-no">01 / DISTANCE TYPES</span>
+          <h2>「距離」は四つに分けて考える</h2>
+        </div>
+        <div class="prose">
+          <p>ArUcoから直接得られるのは、マーカー座標系とカメラ座標系のあいだの回転と並進です。</p>
+          <p>その並進から直線距離と光軸方向の奥行きを計算できますが、地面距離とローバー本体の距離には別の情報が要ります。</p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>求めたい量</th><th>意味</th><th>ArUco単体で可能か</th><th>追加条件</th></tr></thead>
+            <tbody>
+              <tr><td>直線距離 <var>d</var></td><td>カメラ中心からマーカー中心まで</td><td class="yes">可能</td><td>マーカー実寸、内部パラメータ、歪み係数</td></tr>
+              <tr><td>奥行き <var>t<sub>z</sub></var></td><td>カメラの光軸方向の距離</td><td class="yes">可能</td><td>直線距離と同じ</td></tr>
+              <tr><td>地面上の距離 <var>D</var></td><td>カメラ位置を地面へ投影した点から目標点まで</td><td class="conditional">条件付き</td><td>マーカーと地面の位置関係</td></tr>
+              <tr><td>ローバー本体の距離</td><td>車体上の基準点から目標点まで</td><td class="no">単体では不可</td><td>カメラから車体基準点への変換</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout warning"><strong>「カメラの位置が変わる」の意味を分けます。</strong>ローバーごと傾いてカメラの世界座標が変わるだけなら、各フレームのPnPで対応できます。カメラが車体に対して動くなら、ローバー本体の位置を出すには、その動きを測るエンコーダなどが必要です。</div>
+      </section>
+
+      <section id="coordinates">
+        <div class="section-head">
+          <span class="section-no">02 / COORDINATE FRAMES</span>
+          <h2>二つの座標系と記号</h2>
+        </div>
+        <div class="prose">
+          <p>式を読む前に、点をどの座標系で表しているかを固定します。</p>
+          <p><strong>マーカー座標系 M</strong>はマーカー中心を原点とし、<var>X<sub>M</sub></var>を右、<var>Y<sub>M</sub></var>を上、<var>Z<sub>M</sub></var>をマーカー面の手前向きに取ります。</p>
+          <p><strong>カメラ座標系 C</strong>はレンズの投影中心を原点とし、<var>X<sub>C</sub></var>を画像の右、<var>Y<sub>C</sub></var>を画像の下、<var>Z<sub>C</sub></var>を光軸の前向きに取ります。</p>
+        </div>
+
+        <figure class="figure" style="margin-top:24px">
+          <div class="figure-head"><span>座標系</span><span>同じ点でも数値は座標系ごとに異なる</span></div>
+          <div class="figure-body">
+            <svg viewBox="0 0 760 355" role="img" aria-labelledby="coordTitle coordDesc">
+              <title id="coordTitle">マーカー座標系とカメラ座標系</title>
+              <desc id="coordDesc">左にカメラ座標軸、右にマーカー座標軸が描かれ、両者を回転Rと並進tで結ぶ。</desc>
+              <defs>
+                <marker id="axisArrow" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="context-stroke"/></marker>
+                <marker id="linkArrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="var(--orange)"/></marker>
+              </defs>
+              <g transform="translate(145 220)">
+                <path d="M-52 -25 H20 L52 0 L20 25 H-52 Z" fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="3"/>
+                <circle cx="27" cy="0" r="10" fill="var(--blue)"/>
+                <circle cx="0" cy="0" r="4" fill="var(--ink)"/>
+                <line x1="0" y1="0" x2="100" y2="0" stroke="var(--red)" stroke-width="2.5" marker-end="url(#axisArrow)"/>
+                <line x1="0" y1="0" x2="0" y2="80" stroke="var(--green)" stroke-width="2.5" marker-end="url(#axisArrow)"/>
+                <line x1="0" y1="0" x2="62" y2="-62" stroke="var(--blue)" stroke-width="2.5" marker-end="url(#axisArrow)"/>
+                <text x="108" y="5" fill="var(--red)" font-family="var(--serif)" font-size="17">X<tspan baseline-shift="sub" font-size="11">C</tspan></text>
+                <text x="6" y="89" fill="var(--green)" font-family="var(--serif)" font-size="17">Y<tspan baseline-shift="sub" font-size="11">C</tspan></text>
+                <text x="68" y="-67" fill="var(--blue)" font-family="var(--serif)" font-size="17">Z<tspan baseline-shift="sub" font-size="11">C</tspan></text>
+                <text x="-38" y="57" fill="var(--ink-2)" font-family="var(--sans)" font-size="14">カメラ座標系 C</text>
+              </g>
+              <g transform="translate(607 135)">
+                <rect x="-60" y="-60" width="120" height="120" fill="var(--surface)" stroke="var(--ink-2)" stroke-width="3"/>
+                <rect x="-43" y="-43" width="86" height="86" fill="var(--ink)"/>
+                <rect x="-31" y="-31" width="19" height="19" fill="var(--panel)"/>
+                <rect x="12" y="-31" width="19" height="19" fill="var(--panel)"/>
+                <rect x="-9" y="-9" width="19" height="19" fill="var(--panel)"/>
+                <rect x="-31" y="13" width="28" height="18" fill="var(--panel)"/>
+                <rect x="13" y="13" width="18" height="18" fill="var(--panel)"/>
+                <circle cx="0" cy="0" r="4" fill="var(--orange)"/>
+                <line x1="0" y1="0" x2="100" y2="0" stroke="var(--red)" stroke-width="2.5" marker-end="url(#axisArrow)"/>
+                <line x1="0" y1="0" x2="0" y2="-95" stroke="var(--green)" stroke-width="2.5" marker-end="url(#axisArrow)"/>
+                <line x1="0" y1="0" x2="-58" y2="58" stroke="var(--blue)" stroke-width="2.5" marker-end="url(#axisArrow)"/>
+                <text x="108" y="5" fill="var(--red)" font-family="var(--serif)" font-size="17">X<tspan baseline-shift="sub" font-size="11">M</tspan></text>
+                <text x="6" y="-101" fill="var(--green)" font-family="var(--serif)" font-size="17">Y<tspan baseline-shift="sub" font-size="11">M</tspan></text>
+                <text x="-83" y="73" fill="var(--blue)" font-family="var(--serif)" font-size="17">Z<tspan baseline-shift="sub" font-size="11">M</tspan></text>
+                <text x="-59" y="98" fill="var(--ink-2)" font-family="var(--sans)" font-size="14">マーカー座標系 M</text>
+              </g>
+              <line x1="242" y1="190" x2="527" y2="143" stroke="var(--orange)" stroke-width="3" stroke-dasharray="8 6" marker-end="url(#linkArrow)"/>
+              <rect x="322" y="132" width="132" height="52" rx="9" fill="var(--panel)" stroke="var(--orange)"/>
+              <text x="388" y="154" text-anchor="middle" fill="var(--orange)" font-family="var(--serif)" font-size="16">回転 R</text>
+              <text x="388" y="174" text-anchor="middle" fill="var(--orange)" font-family="var(--serif)" font-size="16">並進 t</text>
+            </svg>
+          </div>
+        </figure>
+
+        <dl class="terms">
+          <div class="term"><dt><var>L</var></dt><dd>マーカー一辺の実寸です。メートルで与えると、並進と距離もメートルで得られます。</dd></div>
+          <div class="term"><dt><var>P<sub>M</sub></var></dt><dd>マーカー座標系で表した三次元点です。</dd></div>
+          <div class="term"><dt><var>P<sub>C</sub></var></dt><dd>同じ三次元点をカメラ座標系で表したものです。</dd></div>
+          <div class="term"><dt><var>R</var></dt><dd>マーカー座標系の向きをカメラ座標系へ回す3×3回転行列です。</dd></div>
+          <div class="term"><dt><var>t</var></dt><dd>マーカー原点の位置をカメラ座標系で表す3×1並進ベクトルです。</dd></div>
+          <div class="term"><dt><var>K</var></dt><dd>焦点距離と主点をまとめた3×3カメラ内部行列です。</dd></div>
+          <div class="term"><dt><var>f<sub>x</sub>, f<sub>y</sub></var></dt><dd>横方向と縦方向の焦点距離を画素単位で表した値です。</dd></div>
+          <div class="term"><dt><var>c<sub>x</sub>, c<sub>y</sub></var></dt><dd>光軸が画像面と交わる主点の画素座標です。</dd></div>
+          <div class="term"><dt><var>u, v</var></dt><dd>画像上の点の横座標と縦座標です。単位は画素です。</dd></div>
+          <div class="term"><dt><var>s</var></dt><dd>同次座標の倍率です。展開すると、カメラ座標の奥行き <var>Z<sub>C</sub></var> になります。</dd></div>
+        </dl>
+      </section>
+
+      <section id="projection">
+        <div class="section-head">
+          <span class="section-no">03 / PROJECTION</span>
+          <h2>四隅が画像へ写るまで</h2>
+        </div>
+        <div class="prose">
+          <p>OpenCVに渡すマーカーの四隅は、中心を原点とした既知の三次元点です。</p>
+          <p>以下の順番は <code>SOLVEPNP_IPPE_SQUARE</code> が要求する点順であり、検出された画像上の四隅と同じ順に対応させます。</p>
+        </div>
+
+        <div class="equation-card">
+          <div class="eq-label">マーカー四隅の三次元座標</div>
+          <div class="eq small">
+            <span><var>P</var><sub>0</sub> = (−<var>L</var>/2, +<var>L</var>/2, 0)</span><span class="op">,</span>
+            <span><var>P</var><sub>1</sub> = (+<var>L</var>/2, +<var>L</var>/2, 0)</span><span class="op">,</span>
+            <span><var>P</var><sub>2</sub> = (+<var>L</var>/2, −<var>L</var>/2, 0)</span><span class="op">,</span>
+            <span><var>P</var><sub>3</sub> = (−<var>L</var>/2, −<var>L</var>/2, 0)</span>
+          </div>
+          <p class="eq-explain">四点の <var>Z<sub>M</sub></var> がすべて0なのは、マーカー面をマーカー座標系の <var>X<sub>M</sub>Y<sub>M</sub></var> 平面として定義したためです。</p>
+        </div>
+
+        <div class="steps">
+          <article class="step">
+            <h3>マーカー座標からカメラ座標へ変換する</h3>
+            <div class="eq small"><var>P<sub>C</sub></var><span class="op">=</span><var>R P<sub>M</sub></var><span class="op">+</span><var>t</var></div>
+            <p><var>R</var>が点の向きを回し、<var>t</var>がカメラ座標系の位置まで移動させます。</p>
+          </article>
+          <article class="step">
+            <h3>三成分へ展開する</h3>
+            <div class="eq small">
+              <span class="matrix one"><span><var>X<sub>C</sub></var></span><span><var>Y<sub>C</sub></var></span><span><var>Z<sub>C</sub></var></span></span>
+              <span class="op">=</span>
+              <span class="matrix"><span><var>r</var><sub>11</sub></span><span><var>r</var><sub>12</sub></span><span><var>r</var><sub>13</sub></span><span><var>r</var><sub>21</sub></span><span><var>r</var><sub>22</sub></span><span><var>r</var><sub>23</sub></span><span><var>r</var><sub>31</sub></span><span><var>r</var><sub>32</sub></span><span><var>r</var><sub>33</sub></span></span>
+              <span class="matrix one"><span><var>X<sub>M</sub></var></span><span><var>Y<sub>M</sub></var></span><span><var>Z<sub>M</sub></var></span></span>
+              <span class="op">+</span>
+              <span class="matrix one"><span><var>t<sub>x</sub></var></span><span><var>t<sub>y</sub></var></span><span><var>t<sub>z</sub></var></span></span>
+            </div>
+            <p><var>r<sub>ij</sub></var>は回転行列の各要素であり、<var>t<sub>x</sub></var>、<var>t<sub>y</sub></var>、<var>t<sub>z</sub></var>はマーカー中心のカメラ座標です。</p>
+          </article>
+          <article class="step">
+            <h3>カメラ内部行列で画像へ投影する</h3>
+            <div class="eq small">
+              <var>s</var>
+              <span class="matrix one"><span><var>u</var></span><span><var>v</var></span><span>1</span></span>
+              <span class="op">=</span>
+              <span class="matrix"><span><var>f<sub>x</sub></var></span><span>0</span><span><var>c<sub>x</sub></var></span><span>0</span><span><var>f<sub>y</sub></var></span><span><var>c<sub>y</sub></var></span><span>0</span><span>0</span><span>1</span></span>
+              <span class="matrix one"><span><var>X<sub>C</sub></var></span><span><var>Y<sub>C</sub></var></span><span><var>Z<sub>C</sub></var></span></span>
+            </div>
+            <p>この式では説明を簡潔にするためレンズ歪みを省いていますが、実装では歪み係数を <code>solvePnP</code> に渡します。</p>
+          </article>
+          <article class="step">
+            <h3>行列積と同次座標の倍率を展開する</h3>
+            <div class="eq small"><var>s u</var><span class="op">=</span><var>f<sub>x</sub>X<sub>C</sub> + c<sub>x</sub>Z<sub>C</sub></var></div>
+            <div class="eq small"><var>s v</var><span class="op">=</span><var>f<sub>y</sub>Y<sub>C</sub> + c<sub>y</sub>Z<sub>C</sub></var></div>
+            <div class="eq small"><var>s</var><span class="op">=</span><var>Z<sub>C</sub></var></div>
+            <p>三行目から <var>s = Z<sub>C</sub></var> と分かるため、上の二式を <var>Z<sub>C</sub></var> で割れます。</p>
+          </article>
+          <article class="step">
+            <h3>画素座標の式を得る</h3>
+            <div class="eq"><var>u</var><span class="op">=</span><var>f<sub>x</sub></var><span class="fraction"><span><var>X<sub>C</sub></var></span><span><var>Z<sub>C</sub></var></span></span><span class="op">+</span><var>c<sub>x</sub></var></div>
+            <div class="eq"><var>v</var><span class="op">=</span><var>f<sub>y</sub></var><span class="fraction"><span><var>Y<sub>C</sub></var></span><span><var>Z<sub>C</sub></var></span></span><span class="op">+</span><var>c<sub>y</sub></var></div>
+            <p>三次元点が遠くなって <var>Z<sub>C</sub></var> が増えるほど、画像上の中心からのずれは小さくなります。</p>
+          </article>
+        </div>
+
+        <div class="callout"><strong>PnPが解く未知数は <var>R</var> と <var>t</var> です。</strong>既知の四隅 <var>P<sub>0</sub>…P<sub>3</sub></var> と、画像で検出した四隅 <var>(u<sub>0</sub>,v<sub>0</sub>)…(u<sub>3</sub>,v<sub>3</sub>)</var> が上の投影式に合うように、回転と並進を求めます。</div>
+      </section>
+
+      <section id="pose">
+        <div class="section-head">
+          <span class="section-no">04 / PNP OUTPUT</span>
+          <h2><var>t</var>が表す位置</h2>
+        </div>
+        <div class="prose">
+          <p>マーカー中心では <var>P<sub>M</sub> = (0,0,0)<sup>T</sup></var> です。</p>
+          <p>この点を座標変換式へ代入すると、マーカー中心のカメラ座標がそのまま <var>t</var> になることを確認できます。</p>
+        </div>
+
+        <div class="equation-card">
+          <div class="eq-label">マーカー中心を代入</div>
+          <div class="eq"><var>P<sub>C</sub></var><span class="op">=</span><var>R</var><span class="matrix one"><span>0</span><span>0</span><span>0</span></span><span class="op">+</span><var>t</var><span class="op">=</span><var>t</var><span class="op">=</span><span class="matrix one"><span><var>t<sub>x</sub></var></span><span><var>t<sub>y</sub></var></span><span><var>t<sub>z</sub></var></span></span></div>
+          <p class="eq-explain"><var>t</var>は「カメラから見たマーカー中心の位置」です。原文にあった「マーカー座標系から見たカメラの位置」とは向きが逆です。</p>
+        </div>
+
+        <figure class="figure" style="margin-top:24px">
+          <div class="figure-head"><span>並進ベクトル</span><span>三成分と直線距離</span></div>
+          <div class="figure-body">
+            <svg viewBox="0 0 760 350" role="img" aria-labelledby="tvecTitle tvecDesc">
+              <title id="tvecTitle">並進ベクトルの三成分</title>
+              <desc id="tvecDesc">カメラ原点からマーカー中心へtx、ty、tzを成分とするベクトルtが伸び、長さdが示されている。</desc>
+              <defs><marker id="tArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="var(--orange)"/></marker></defs>
+              <g transform="translate(120 270)">
+                <circle cx="0" cy="0" r="6" fill="var(--ink)"/>
+                <line x1="0" y1="0" x2="145" y2="0" stroke="var(--red)" stroke-width="2.5"/>
+                <line x1="0" y1="0" x2="0" y2="-145" stroke="var(--green)" stroke-width="2.5"/>
+                <line x1="0" y1="0" x2="105" y2="-75" stroke="var(--blue)" stroke-width="2.5"/>
+                <text x="-40" y="28" fill="var(--ink-2)" font-family="var(--sans)" font-size="14">カメラ中心</text>
+              </g>
+              <circle cx="590" cy="88" r="7" fill="var(--orange)"/>
+              <text x="610" y="84" fill="var(--ink)" font-family="var(--sans)" font-size="14">マーカー中心</text>
+              <line x1="120" y1="270" x2="584" y2="91" stroke="var(--orange)" stroke-width="4" marker-end="url(#tArrow)"/>
+              <text x="351" y="154" fill="var(--orange)" font-family="var(--serif)" font-size="19">t（長さ d）</text>
+              <path d="M120 270 H505 V121" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="7 6"/>
+              <path d="M505 121 L590 88" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="7 6"/>
+              <text x="304" y="294" fill="var(--red)" font-family="var(--serif)" font-size="17">t<tspan baseline-shift="sub" font-size="11">x</tspan>：右方向</text>
+              <text x="516" y="203" fill="var(--green)" font-family="var(--serif)" font-size="17">t<tspan baseline-shift="sub" font-size="11">y</tspan>：下方向</text>
+              <text x="543" y="132" fill="var(--blue)" font-family="var(--serif)" font-size="17">t<tspan baseline-shift="sub" font-size="11">z</tspan>：光軸方向</text>
+            </svg>
+          </div>
+        </figure>
+      </section>
+
+      <section id="distance">
+        <div class="section-head">
+          <span class="section-no">05 / RANGE</span>
+          <h2>直線距離と奥行きの計算</h2>
+        </div>
+        <div class="prose">
+          <p><var>t</var>の三成分は互いに直交するカメラ座標軸に沿っているため、三次元のピタゴラスの定理を使えます。</p>
+        </div>
+
+        <div class="equation-card">
+          <div class="eq-label">直線距離</div>
+          <div class="eq"><var>d</var><span class="op">=</span><span>‖<var>t</var>‖<sub>2</sub></span><span class="op">=</span><span class="result">√(<var>t<sub>x</sub><sup>2</sup> + t<sub>y</sub><sup>2</sup> + t<sub>z</sub><sup>2</sup></var>)</span></div>
+          <p class="eq-explain"><var>d</var>はカメラ中心とマーカー中心を結ぶ線分の長さです。<var>t<sub>x</sub></var>、<var>t<sub>y</sub></var>、<var>t<sub>z</sub></var>の単位がメートルなら、<var>d</var>もメートルです。</p>
+        </div>
+
+        <div class="equation-card">
+          <div class="eq-label">光軸方向の奥行き</div>
+          <div class="eq"><var>z<sub>depth</sub></var><span class="op">=</span><span class="result"><var>t<sub>z</sub></var></span></div>
+          <p class="eq-explain"><var>t<sub>z</sub></var>は光軸方向の成分だけなので、マーカーが画像の中央から外れるほど一般に <var>t<sub>z</sub> &lt; d</var> となります。</p>
+        </div>
+
+        <div class="calculator" aria-label="距離計算例">
+          <div class="field"><label for="tx">t<sub>x</sub> [m]</label><input id="tx" type="number" value="0.30" step="0.01"></div>
+          <div class="field"><label for="ty">t<sub>y</sub> [m]</label><input id="ty" type="number" value="-0.10" step="0.01"></div>
+          <div class="field"><label for="tz">t<sub>z</sub> [m]</label><input id="tz" type="number" value="2.00" step="0.01"></div>
+          <div class="results">
+            <div class="result-box"><span>直線距離 d</span><output id="distanceOut">2.025 m</output></div>
+            <div class="result-box"><span>奥行き tᶻ</span><output id="depthOut">2.000 m</output></div>
+            <div class="result-box"><span>光軸からのずれ</span><output id="lateralOut">0.316 m</output></div>
+          </div>
+        </div>
+
+        <div class="callout"><strong>カメラの取り付け高さや世界に対する傾きは、この <var>d</var> の計算には入りません。</strong>PnPがそのフレームの四隅から <var>R</var> と <var>t</var> を推定するためです。</div>
+      </section>
+
+      <section id="ground">
+        <div class="section-head">
+          <span class="section-no">06 / GROUND RANGE</span>
+          <h2>地面上の距離へ変換する条件</h2>
+        </div>
+        <div class="prose">
+          <p>地面上の距離を求めるには、まずカメラ中心をマーカー座標系で表します。</p>
+          <p><var>R</var>と<var>t</var>はマーカーからカメラへの変換なので、逆変換を使います。</p>
+        </div>
+
+        <div class="steps">
+          <article class="step">
+            <h3>カメラ中心を変換式へ代入する</h3>
+            <div class="eq small"><var>P<sub>C</sub></var><span class="op">=</span><var>R P<sub>M</sub> + t</var></div>
+            <div class="eq small"><span>0</span><span class="op">=</span><var>R C<sub>M</sub> + t</var></div>
+            <p>カメラ中心はカメラ座標系の原点なので <var>P<sub>C</sub> = 0</var> とし、その点のマーカー座標を <var>C<sub>M</sub></var> と置きます。</p>
+          </article>
+          <article class="step">
+            <h3>並進を右辺から左辺へ移す</h3>
+            <div class="eq small"><span>−<var>t</var></span><span class="op">=</span><var>R C<sub>M</sub></var></div>
+            <p>両辺から <var>t</var> を引いただけです。</p>
+          </article>
+          <article class="step">
+            <h3>回転の逆を掛ける</h3>
+            <div class="eq"><var>C<sub>M</sub></var><span class="op">=</span><span class="result">−<var>R</var><sup>T</sup><var>t</var></span></div>
+            <p>回転行列では逆行列が転置行列に等しいため、<var>R<sup>−1</sup> = R<sup>T</sup></var> を使っています。</p>
+          </article>
+        </div>
+
+        <figure class="figure" style="margin-top:24px">
+          <div class="figure-head"><span>垂直なマーカー板の例</span><span>高さ H と地面平面の関係が既知</span></div>
+          <div class="figure-body">
+            <svg viewBox="0 0 760 390" role="img" aria-labelledby="groundTitle groundDesc">
+              <title id="groundTitle">マーカー座標から地面距離への変換</title>
+              <desc id="groundDesc">垂直な板のマーカー中心から地面までの高さHが示され、カメラ中心の地面への投影とマーカー直下点の間が地面距離Dとして示されている。</desc>
+              <defs>
+                <marker id="groundArrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="var(--orange)"/></marker>
+              </defs>
+              <path d="M30 315 H730" stroke="var(--ink-2)" stroke-width="3"/>
+              <path d="M30 316 C100 300 140 330 210 315 S335 303 400 315 S535 329 610 315 S685 307 730 315" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+              <rect x="605" y="70" width="14" height="247" fill="var(--ink-2)" opacity=".55"/>
+              <rect x="520" y="88" width="86" height="86" fill="var(--surface)" stroke="var(--ink)" stroke-width="3"/>
+              <rect x="534" y="102" width="58" height="58" fill="var(--ink)"/>
+              <rect x="542" y="110" width="15" height="15" fill="var(--panel)"/>
+              <rect x="570" y="110" width="14" height="15" fill="var(--panel)"/>
+              <rect x="557" y="127" width="14" height="14" fill="var(--panel)"/>
+              <rect x="542" y="145" width="20" height="8" fill="var(--panel)"/>
+              <rect x="576" y="143" width="8" height="10" fill="var(--panel)"/>
+              <circle cx="563" cy="131" r="5" fill="var(--orange)"/>
+              <line x1="500" y1="131" x2="500" y2="315" stroke="var(--green)" stroke-width="2" marker-start="url(#groundArrow)" marker-end="url(#groundArrow)"/>
+              <text x="472" y="227" fill="var(--green)" font-family="var(--serif)" font-size="19">H</text>
+              <circle cx="185" cy="198" r="9" fill="var(--blue)"/>
+              <text x="113" y="180" fill="var(--ink)" font-family="var(--sans)" font-size="14">カメラ中心 C<tspan baseline-shift="sub" font-size="10">M</tspan></text>
+              <line x1="185" y1="207" x2="185" y2="315" stroke="var(--blue)" stroke-width="2" stroke-dasharray="7 6"/>
+              <circle cx="185" cy="315" r="6" fill="var(--blue)"/>
+              <circle cx="563" cy="315" r="6" fill="var(--orange)"/>
+              <line x1="196" y1="344" x2="552" y2="344" stroke="var(--orange)" stroke-width="3" marker-start="url(#groundArrow)" marker-end="url(#groundArrow)"/>
+              <text x="374" y="374" text-anchor="middle" fill="var(--orange)" font-family="var(--serif)" font-size="19">地面距離 D</text>
+              <line x1="185" y1="198" x2="555" y2="135" stroke="var(--violet)" stroke-width="2.5"/>
+              <text x="339" y="144" fill="var(--violet)" font-family="var(--serif)" font-size="17">直線距離 d</text>
+            </svg>
+          </div>
+        </figure>
+
+        <div class="prose" style="margin-top:24px">
+          <p>マーカーが鉛直な板に貼られ、<var>Y<sub>M</sub></var>が鉛直上向きで、マーカー中心の直下を目標点とする場合を考えます。</p>
+          <p>カメラ中心を <var>C<sub>M</sub> = (C<sub>x</sub>, C<sub>y</sub>, C<sub>z</sub>)<sup>T</sup></var> とすれば、水平面内の距離は次の式です。</p>
+        </div>
+
+        <div class="equation-card">
+          <div class="eq-label">マーカー直下点までの地面距離</div>
+          <div class="eq"><var>D</var><span class="op">=</span><span class="result">√(<var>C<sub>x</sub><sup>2</sup> + C<sub>z</sub><sup>2</sup></var>)</span></div>
+          <p class="eq-explain"><var>X<sub>M</sub></var>と<var>Z<sub>M</sub></var>を水平面の二軸としているため、この二成分だけを使います。既知の高さ<var>H</var>を使えば、同時にカメラ高さ <var>h<sub>camera</sub> = H + C<sub>y</sub></var> も計算できます。</p>
+        </div>
+
+        <div class="callout warning"><strong>高さ <var>H</var> だけでは任意の地面距離は決まりません。</strong>マーカーの上下方向が鉛直であること、対象とする地面平面が定義できること、目標点がマーカーのどこに対応するかも必要です。砂地の凹凸に沿った走行距離が欲しい場合は、局所的な平面距離では足りず、地形モデルや経路計画が必要です。</div>
+
+        <div class="equation-card">
+          <div class="eq-label">ローバー基準点まで求める場合</div>
+          <div class="eq small"><var>T<sub>MR</sub></var><span class="op">=</span><var>T<sub>MC</sub> T<sub>CR</sub></var></div>
+          <p class="eq-explain"><var>T<sub>MC</sub></var>はPnP結果を反転して得るカメラからマーカーへの変換、<var>T<sub>CR</sub></var>はローバー基準点からカメラへの既知の外部変換です。カメラが車体に対して動き、<var>T<sub>CR</sub></var>が未知になる場合、画像一枚とマーカーだけではローバー基準点を一意に決められません。</p>
+        </div>
+      </section>
+
+      <section id="implementation">
+        <div class="section-head">
+          <span class="section-no">07 / OPENCV</span>
+          <h2>OpenCVでの最小実装</h2>
+        </div>
+        <div class="prose">
+          <p>次のPython例は、一辺20 cmのマーカーをメートル単位で定義し、検出した四隅から姿勢と距離を求めます。</p>
+          <p><code>camera_matrix</code>と<code>dist_coeffs</code>には、実際の解像度とフォーカス条件で校正した値を読み込んでください。</p>
+        </div>
+
+        <pre aria-label="OpenCV PythonによるArUco距離推定コード"><code><span class="code-name">import</span> cv2 <span class="code-name">as</span> cv
+<span class="code-name">import</span> numpy <span class="code-name">as</span> np
+
+<span class="code-comment"># 単位をmに統一する。</span>
+marker_length = <span class="code-value">0.20</span>
+half = marker_length / <span class="code-value">2.0</span>
+
+object_points = np.array([
+    [-half, +half, <span class="code-value">0.0</span>],  <span class="code-comment"># 左上</span>
+    [+half, +half, <span class="code-value">0.0</span>],  <span class="code-comment"># 右上</span>
+    [+half, -half, <span class="code-value">0.0</span>],  <span class="code-comment"># 右下</span>
+    [-half, -half, <span class="code-value">0.0</span>],  <span class="code-comment"># 左下</span>
+], dtype=np.float32)
+
+dictionary = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
+parameters = cv.aruco.DetectorParameters()
+detector = cv.aruco.ArucoDetector(dictionary, parameters)
+
+corners, ids, rejected = detector.detectMarkers(frame)
+
+<span class="code-name">if</span> ids <span class="code-name">is not</span> <span class="code-value">None</span>:
+    <span class="code-name">for</span> marker_corners, marker_id <span class="code-name">in</span> zip(corners, ids.ravel()):
+        image_points = marker_corners.reshape(<span class="code-value">4</span>, <span class="code-value">2</span>).astype(np.float32)
+
+        ok, rvec, tvec = cv.solvePnP(
+            object_points,
+            image_points,
+            camera_matrix,
+            dist_coeffs,
+            flags=cv.SOLVEPNP_IPPE_SQUARE,
+        )
+
+        <span class="code-name">if not</span> ok:
+            <span class="code-name">continue</span>
+
+        tx, ty, tz = tvec.reshape(<span class="code-value">3</span>)
+        distance = float(np.linalg.norm(tvec))
+
+        <span class="code-comment"># カメラ中心をマーカー座標系で表す。</span>
+        rotation, _ = cv.Rodrigues(rvec)
+        camera_in_marker = -rotation.T @ tvec
+
+        <span class="code-comment"># 推定結果を画像へ戻し、四隅との誤差を測る。</span>
+        projected, _ = cv.projectPoints(
+            object_points, rvec, tvec, camera_matrix, dist_coeffs
+        )
+        residual = projected.reshape(<span class="code-value">4</span>, <span class="code-value">2</span>) - image_points
+        reprojection_rmse = float(np.sqrt(np.mean(np.sum(residual**<span class="code-value">2</span>, axis=<span class="code-value">1</span>))))
+
+        print({
+            <span class="code-value">"id"</span>: int(marker_id),
+            <span class="code-value">"tvec_m"</span>: [float(tx), float(ty), float(tz)],
+            <span class="code-value">"distance_m"</span>: distance,
+            <span class="code-value">"camera_in_marker_m"</span>: camera_in_marker.ravel().tolist(),
+            <span class="code-value">"reprojection_rmse_px"</span>: reprojection_rmse,
+        })</code></pre>
+
+        <div class="callout"><strong><code>marker_length</code>は黒い外枠を含むマーカー正方形の実寸に合わせます。</strong>印刷時の拡大縮小や、板へ貼るときの伸びを定規で確認してください。指定した単位が<code>tvec</code>の単位になります。</div>
+      </section>
+
+      <section id="field">
+        <div class="section-head">
+          <span class="section-no">08 / FIELD ACCURACY</span>
+          <h2>砂地で精度を落とす要因</h2>
+        </div>
+        <div class="prose">
+          <p>理論式が成立していても、四隅の検出誤差が奥行きへ拡大されるため、遠距離ほど推定値は不安定になります。</p>
+          <p>正面に近いマーカーは平面姿勢の二解が似ることもあるため、再投影誤差と時系列の連続性を併用して異常値を除きます。</p>
+        </div>
+
+        <div class="checklist">
+          <article class="check"><b>画像上の大きさ</b><p>遠方でマーカーの一辺が数十画素以下になると、1画素の角ずれが距離へ大きく効きます。実距離ごとに誤差を実測します。</p></article>
+          <article class="check"><b>モーションブラー</b><p>露光時間を短くし、照明不足ならゲインとノイズの兼ね合いを現場で調整します。</p></article>
+          <article class="check"><b>ローリングシャッター</b><p>振動中は行ごとの撮影時刻差で四隅が歪みます。防振、短露光、グローバルシャッターを検討します。</p></article>
+          <article class="check"><b>レンズと解像度</b><p>校正後にフォーカスや解像度を変える場合は、再校正するか内部行列を正しくスケーリングします。</p></article>
+          <article class="check"><b>板の平面性</b><p>反った紙や板では、四隅が同一平面にあるというPnPの前提が崩れます。硬い平板へ固定します。</p></article>
+          <article class="check"><b>照明と視線角</b><p>白飛び、影、汚れ、強い斜視は角検出を悪化させます。マーカーを大きくし、複数配置も検討します。</p></article>
+        </div>
+
+        <div class="equation-card">
+          <div class="eq-label">単純な指数移動平均</div>
+          <div class="eq small"><var>d̂<sub>k</sub></var><span class="op">=</span><var>α d<sub>k</sub></var><span class="op">+</span><var>(1 − α)d̂<sub>k−1</sub></var><span class="op">,</span><span>0 &lt; <var>α</var> ≤ 1</span></div>
+          <p class="eq-explain"><var>d<sub>k</sub></var>は現在フレームの測定値、<var>d̂<sub>k</sub></var>は平滑化後の値、<var>α</var>は新しい測定値を採用する割合です。<var>α</var>を小さくすると揺れは減りますが、応答が遅れます。制御に使う前に、外れ値除去と遅延評価も行います。</p>
+        </div>
+
+        <div class="cards">
+          <article class="card"><span class="tag">最低限</span><h3>単一マーカー</h3><p>各フレームで再投影誤差、<var>t<sub>z</sub> &gt; 0</var>、距離の急変を確認します。</p></article>
+          <article class="card"><span class="tag">精度向上</span><h3>ArUco Board</h3><p>複数マーカーの対応点を一つの姿勢推定に使うと、部分的な遮蔽へ対応し、利用できる点も増やせます。</p></article>
+          <article class="card"><span class="tag">ローバー向け</span><h3>IMUとオドメトリ</h3><p>ArUcoが見えない区間を補い、時系列フィルタで位置と姿勢を融合します。</p></article>
+          <article class="card"><span class="tag caution">別問題</span><h3>地形に沿う走行距離</h3><p>二点間の水平距離ではなく、凹凸面上の経路長が必要なら、深度センサーや地形地図を使います。</p></article>
+        </div>
+      </section>
+
+      <section id="sources">
+        <div class="section-head">
+          <span class="section-no">09 / REFERENCES</span>
+          <h2>根拠と参照箇所</h2>
+        </div>
+        <div class="prose">
+          <p>実装時は、使用しているOpenCVのバージョンに対応するAPI仕様も確認してください。</p>
+        </div>
+        <ol class="sources">
+          <li><a href="https://docs.opencv.org/4.x/d5/dae/tutorial_aruco_detection.html">OpenCV: Detection of ArUco Markers</a><span>「Pose Estimation」節。マーカー四隅の三次元座標、<code>solvePnP</code>への入力、マーカー長と<code>tvec</code>の単位の関係を確認できます。</span></li>
+          <li><a href="https://docs.opencv.org/4.x/d5/d1f/calib3d_solvePnP.html">OpenCV: Perspective-n-Point Pose Computation</a><span>冒頭の投影式と「Pose computation methods」節。<var>R</var>と<var>t</var>の変換方向、<code>SOLVEPNP_IPPE_SQUARE</code>の四点順を確認できます。</span></li>
+          <li><a href="https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html">OpenCV: Camera Calibration</a><span>「Basics」節と「Calibration」節。内部行列の<var>f<sub>x</sub></var>、<var>f<sub>y</sub></var>、<var>c<sub>x</sub></var>、<var>c<sub>y</sub></var>と歪み係数を確認できます。</span></li>
+          <li><a href="https://docs.opencv.org/4.x/db/da9/tutorial_aruco_board_detection.html">OpenCV: Detection of ArUco Boards</a><span>「Pose Estimation」節。複数マーカーを一つのBoardとして姿勢推定し、遮蔽されたマーカーがある場合にも利用する方法を確認できます。</span></li>
+        </ol>
+      </section>
+    </main>
+  </div>
+
+  <footer>このガイドの距離は幾何学的な推定値です。停止距離や安全余裕を含む制御値は、実機で測った誤差分布と遅延を基に別途設計してください。</footer>
+</div>
+
+<script>
+  const root = document.documentElement;
+  const themeButton = document.getElementById('themeButton');
+
+  themeButton.addEventListener('click', () => {
+    const darkNow = root.dataset.theme === 'dark' ||
+      (!root.dataset.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    root.dataset.theme = darkNow ? 'light' : 'dark';
+  });
+
+  const inputs = ['tx', 'ty', 'tz'].map((id) => document.getElementById(id));
+  const distanceOut = document.getElementById('distanceOut');
+  const depthOut = document.getElementById('depthOut');
+  const lateralOut = document.getElementById('lateralOut');
+
+  function updateDistance() {
+    const [tx, ty, tz] = inputs.map((input) => Number(input.value) || 0);
+    const distance = Math.hypot(tx, ty, tz);
+    const lateral = Math.hypot(tx, ty);
+    distanceOut.value = `${distance.toFixed(3)} m`;
+    depthOut.value = `${tz.toFixed(3)} m`;
+    lateralOut.value = `${lateral.toFixed(3)} m`;
+  }
+
+  inputs.forEach((input) => input.addEventListener('input', updateDistance));
+  updateDistance();
+</script>
+</body>
+</html>
