@@ -49,6 +49,9 @@ code,.mono{font-family:var(--mono);font-size:.93em}
 .tag{display:block;margin-bottom:7px;color:var(--muted);font:10.5px var(--mono);letter-spacing:.13em;text-transform:uppercase}
 .concept h3{margin-bottom:12px}.concept p,.basis-card p{margin:0;color:var(--ink2);font-size:13.5px}
 .basis-card b{display:block;margin-bottom:8px;color:var(--rotate);font-family:var(--mono)}
+.derive{display:flex;flex-direction:column;gap:12px;margin-top:7px}
+.derive .equation{padding:12px 14px;border:1px solid var(--soft);background:var(--surface)}
+.basis-x{color:var(--move);font-weight:700}.basis-y{color:var(--camera);font-weight:700}
 .fig{border:1px solid var(--line);background:var(--panel)}
 .fig-bar{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:9px 16px;border-bottom:1px solid var(--soft);background:var(--surface);color:var(--muted);font:11px var(--mono);letter-spacing:.08em}
 .fig-bar b{color:var(--ink2);letter-spacing:.14em}.fig-bar .note{margin-left:auto;letter-spacing:.03em}
@@ -91,7 +94,7 @@ footer{padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font
     <p class="lede">カメラ幾何で頻出する <strong>R と t</strong> は、難しい記号に見えても、役割は「向きを変える」と「位置をずらす」の二つだけです。このページでは、まず 2D の矢印を動かして仕組みをつかみ、最後に 3D のカメラ座標変換へつなげます。行列を初めて見る人でも、足し算と掛け算を順番に追えば読める構成です。</p>
     <div class="goal-strip" aria-label="このページのゴール">
       <div class="goal"><b>GOAL 1</b><span>ベクトルを「向きと長さを持つ数の組」として読める</span></div>
-      <div class="goal"><b>GOAL 2</b><span>回転 R と並進 t を、具体的な数で手計算できる</span></div>
+      <div class="goal"><b>GOAL 2</b><span>単位ベクトルの回転から R を組み立て、具体的な数で計算できる</span></div>
       <div class="goal"><b>GOAL 3</b><span>カメラの式 P<sub>c</sub> = RP<sub>w</sub> + t の意味を説明できる</span></div>
     </div>
   </header>
@@ -106,6 +109,17 @@ footer{padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font
       <div class="concept"><span class="tag">Displacement vector</span><h3>移動量として読む</h3><p>(3, −2) は「今いる場所から右へ 3、下へ 2」。同じ数の組でも、文脈によって位置にも移動にもなります。</p></div>
     </div>
     <div class="equation"><span>P</span><span class="op">=</span><span class="mat c1"><span>2</span><span>1</span></span><span class="op">← 横に (2, 1) と書いても、縦に並べても同じ二つの成分</span></div>
+    <p class="prose">
+      座標の基準になる二本の矢印を、<strong>標準基底</strong>と呼びます。
+      x 軸方向へ長さ 1 の e<sub>x</sub> = (1, 0) と、y 軸方向へ長さ 1 の e<sub>y</sub> = (0, 1) です。
+      任意のベクトル (x, y) は、e<sub>x</sub> を x 倍した矢印と e<sub>y</sub> を y 倍した矢印の和に分けられます。
+    </p>
+    <div class="equation" aria-label="一般のベクトルを標準基底に分解する式">
+      <span class="mat c1"><span>x</span><span>y</span></span><span class="op">=</span>
+      <span>x</span><span class="basis-x mat c1"><span>1</span><span>0</span></span><span class="op">+</span>
+      <span>y</span><span class="basis-y mat c1"><span>0</span><span>1</span></span>
+      <span class="op">= x e<sub>x</sub> + y e<sub>y</sub></span>
+    </div>
   </section>
 
   <section id="translation">
@@ -133,28 +147,140 @@ footer{padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font
 
   <section id="rotation">
     <div class="sec-head">
-      <span class="sec-no">03 / Rotation matrix</span><h2>回転行列 R は、長さを保ったまま向きを変える</h2>
-      <p class="prose"><strong>回転行列（rotation matrix）</strong>は、ベクトルに掛けると向きだけを変える数の表です。2D で原点を中心に反時計回りへ θ 回す行列は、下の 2×2 です。cos θ と sin θ は、回した後の横成分と縦成分を分けるための数だと思えば十分です。</p>
+      <span class="sec-no">03 / Rotation matrix</span><h2>単位ベクトルから回転行列を組み立てる</h2>
+      <p class="prose">
+        原点を中心に、ベクトルを反時計回りへ θ だけ回す操作を考えます。
+        この操作をベクトルに作用させる数の表を、<strong>回転行列（rotation matrix）</strong>と呼びます。
+        回転後の一般式をいきなり覚える必要はありません。
+        前節で用意した e<sub>x</sub> と e<sub>y</sub> を回し、その二本を使って任意のベクトルを組み直せば、回転行列の各成分が決まります。
+      </p>
     </div>
-    <div class="equation"><span class="hot-r">R(θ)</span><span class="op">=</span><span class="mat c2"><span>cos θ</span><span>−sin θ</span><span>sin θ</span><span>cos θ</span></span><span class="op">,</span><span>P′</span><span class="op">=</span><span class="hot-r">R(θ)</span><span>P</span></div>
+
+    <div class="basis-grid">
+      <div class="basis-card">
+        <b>e<sub>x</sub> = (1, 0) の回転</b>
+        <p>
+          長さ 1 の矢印が x 軸となす角は 0° です。
+          θ 回転すると、半径 1 の円（単位円）上の角度 θ の点へ移るため、座標は <span class="basis-x">(cos θ, sin θ)</span> になります。
+        </p>
+      </div>
+      <div class="basis-card">
+        <b>e<sub>y</sub> = (0, 1) の回転</b>
+        <p>
+          e<sub>y</sub> の角度は 90° です。
+          θ 回転後の角度は 90° + θ です。
+          cos(90° + θ) = −sin θ、sin(90° + θ) = cos θ なので、座標は <span class="basis-y">(−sin θ, cos θ)</span> になります。
+        </p>
+      </div>
+    </div>
     <div class="fig">
-      <div class="fig-bar"><b>FIG. 2</b><span>点 P = (2, 1) を原点のまわりに回す</span><span class="note">長さは常に √5</span></div>
+      <div class="fig-bar"><b>FIG. 2</b><span>回転した基底から P′ を組み立てる</span><span class="note">P = 2eₓ + 1eᵧ</span></div>
       <div class="fig-body"><div class="visual-grid">
-        <svg id="rotation-svg" viewBox="0 0 580 390" role="img" aria-label="ベクトルPを原点の周りに回転する座標平面"></svg>
-        <div class="readout"><span class="readout-label">row by column</span><div class="math-card" id="rotation-matrix" aria-live="polite"></div><div class="math-card" id="rotation-calc"></div></div>
+        <svg id="rotation-svg" viewBox="0 0 580 390" role="img" aria-label="回転した二本の基底ベクトルからベクトルPの回転後を合成する座標平面"></svg>
+        <div class="readout">
+          <span class="readout-label">rotate basis, then compose</span>
+          <div class="math-card" id="basis-x-calc"></div>
+          <div class="math-card" id="basis-y-calc"></div>
+          <div class="math-card" id="rotation-compose"></div>
+          <div class="math-card" id="rotation-matrix" aria-live="polite"></div>
+        </div>
       </div></div>
       <div class="controls"><label class="ctrl"><span class="ctrl-head"><span>θ / 反時計回りの角度</span><output id="out-angle">90°</output></span><input id="angle" type="range" min="-180" max="180" step="15" value="90"><span class="ctrl-scale"><span>−180°</span><span>0°</span><span>+180°</span></span></label></div>
     </div>
     <div class="step-stack">
-      <div class="step"><div><h3>1 行目で、新しい x を作る</h3><p>x′ = cos θ × x − sin θ × y。行列の 1 行目と、ベクトルの上から下をペアで掛けて足します。</p></div></div>
-      <div class="step"><div><h3>2 行目で、新しい y を作る</h3><p>y′ = sin θ × x + cos θ × y。同じ元の x, y を、今度は 2 行目と掛けます。</p></div></div>
-      <div class="step"><div><h3>90° の具体例</h3><p>cos 90° = 0、sin 90° = 1 なので、(2, 1) は (0×2 − 1×1, 1×2 + 0×1) = (−1, 2) になります。</p></div></div>
+      <div class="step">
+        <div>
+          <h3>一般のベクトルを二本の基底に分ける</h3>
+          <p>
+            P = (x, y) は、x e<sub>x</sub> + y e<sub>y</sub> と書けます。
+            x と y は、それぞれの基底を何倍するかを表す係数です。
+          </p>
+          <div class="derive">
+            <div class="equation"><span>P</span><span class="op">=</span><span class="mat c1"><span>x</span><span>y</span></span><span class="op">=</span><span>x e<sub>x</sub> + y e<sub>y</sub></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>分けた二本を同じ角度だけ回す</h3>
+          <p>
+            回転しても、ベクトルを何倍するかという係数 x, y は変わりません。
+            回転はベクトルの和と実数倍を保つため、P を回した結果は x·R e<sub>x</sub> + y·R e<sub>y</sub> です。
+            この性質を<strong>線形性</strong>と呼びます。
+          </p>
+          <div class="derive">
+            <div class="equation"><span class="hot-r">RP</span><span class="op">=</span><span>R(x e<sub>x</sub> + y e<sub>y</sub>)</span><span class="op">=</span><span>x·R e<sub>x</sub> + y·R e<sub>y</sub></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>回転後の基底を代入する</h3>
+          <p>
+            R e<sub>x</sub> = (cos θ, sin θ)、R e<sub>y</sub> = (−sin θ, cos θ) を代入します。
+            x 成分どうしと y 成分どうしを足すと、回転後の座標が得られます。
+          </p>
+          <div class="derive">
+            <div class="equation">
+              <span>RP</span><span class="op">=</span>
+              <span>x</span><span class="basis-x mat c1"><span>cos θ</span><span>sin θ</span></span><span class="op">+</span>
+              <span>y</span><span class="basis-y mat c1"><span>−sin θ</span><span>cos θ</span></span>
+            </div>
+            <div class="equation"><span class="op">=</span><span class="mat c1"><span>x cos θ − y sin θ</span><span>x sin θ + y cos θ</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>二本の行き先を列として並べる</h3>
+          <p>
+            行列とベクトルの積は、行列の第 1 列を x 倍し、第 2 列を y 倍して足す計算です。
+            したがって、回転後の e<sub>x</sub> を第 1 列、回転後の e<sub>y</sub> を第 2 列に置けば、同じ計算を行列で表せます。
+          </p>
+          <div class="derive">
+            <div class="equation">
+              <span class="hot-r">R(θ)</span><span class="op">=</span>
+              <span>[ R e<sub>x</sub>　R e<sub>y</sub> ]</span><span class="op">=</span>
+              <span class="mat c2"><span class="basis-x">cos θ</span><span class="basis-y">−sin θ</span><span class="basis-x">sin θ</span><span class="basis-y">cos θ</span></span>
+            </div>
+            <div class="equation">
+              <span>RP</span><span class="op">=</span>
+              <span class="mat c2"><span>cos θ</span><span>−sin θ</span><span>sin θ</span><span>cos θ</span></span>
+              <span class="mat c1"><span>x</span><span>y</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+
     <div class="basis-grid">
-      <div class="basis-card"><b>R の 1 列目 = (cos θ, sin θ)</b><p>元の x 軸の単位ベクトル (1, 0) が、回転後にどちらを向くかを表します。</p></div>
-      <div class="basis-card"><b>R の 2 列目 = (−sin θ, cos θ)</b><p>元の y 軸の単位ベクトル (0, 1) が、回転後にどちらを向くかを表します。行列の列は「回した後の軸」です。</p></div>
+      <div class="basis-card">
+        <b>90° の回転行列</b>
+        <p>
+          cos 90° = 0、sin 90° = 1 です。
+          e<sub>x</sub> は (0, 1)、e<sub>y</sub> は (−1, 0) へ移るため、R の列は順に (0, 1) と (−1, 0) になります。
+        </p>
+      </div>
+      <div class="basis-card">
+        <b>P = (2, 1) の具体例</b>
+        <p>
+          P′ = 2(0, 1) + 1(−1, 0) = (−1, 2) です。
+          FIG. 2 の橙色の矢印が 2·R e<sub>x</sub>、青色の矢印が R e<sub>y</sub> を表します。
+        </p>
+      </div>
     </div>
-    <div class="callout"><p><strong>回転行列の逆は、角度を反対にした回転です。</strong> R(θ)<sup>−1</sup> = R(−θ)。回転行列では、行と列を入れ替えた転置 R<sup>T</sup> も同じものになるため、R<sup>−1</sup> = R<sup>T</sup> と書けます。</p></div>
+    <div class="callout">
+      <p>
+        <strong>点を動かす回転行列では、列を見れば基底ベクトルの行き先が分かります。</strong>
+        この読み方は、点を 3D 空間で回す 3×3 の回転行列でも変わりません。
+        三本の列は、回転後の x 軸、y 軸、z 軸を順に表します。
+        座標を書き換える回転行列では変換の向きを確認する必要があり、その区別は第 5 節で扱います。
+      </p>
+      <p>
+        回転行列の逆は、角度を反対にした回転です。
+        R(θ)<sup>−1</sup> = R(−θ) であり、回転行列では R<sup>−1</sup> = R<sup>T</sup> も成り立ちます。
+      </p>
+    </div>
   </section>
 
   <section id="combine">
@@ -174,7 +300,15 @@ footer{padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font
   <section id="coordinates">
     <div class="sec-head">
       <span class="sec-no">05 / Camera coordinates</span><h2>カメラでは「点を動かす」のではなく、住所を書き換える</h2>
-      <p class="prose">ここが最も大切な切り替えです。カメラの式では、現実の点を動かしているわけではありません。同じ点 P を、世界に固定したものさしで測った住所 P<sub>w</sub> から、カメラを原点とするものさしで測った住所 P<sub>c</sub> へ<strong>書き換えています</strong>。</p>
+      <p class="prose">
+        前節までは、固定した座標軸の上で点を動かす回転を扱いました。
+        カメラの式では現実の点を動かさず、同じ点 P の住所を世界座標 P<sub>w</sub> からカメラ座標 P<sub>c</sub> へ<strong>書き換えます</strong>。
+      </p>
+      <p class="prose">
+        同じ R という記号でも、どちらの座標からどちらの座標へ変換するかは式ごとに決まります。
+        以下の R は「世界座標の成分をカメラ座標の成分へ変換する行列」です。
+        逆向きにカメラ座標から世界座標へ戻す回転には R<sup>T</sup> を使います。
+      </p>
     </div>
     <div class="table-scroll"><table class="compare">
       <thead><tr><th></th><th>点を動かす見方（active）</th><th>座標系を書き換える見方（passive）</th></tr></thead>
@@ -267,18 +401,36 @@ function drawTranslation(){
 }
 function drawRotation(){
  var deg=val("angle"),rad=deg*Math.PI/180,c=clean(Math.cos(rad)),sn=clean(Math.sin(rad)),px=2,py=1,qx=c*px-sn*py,qy=sn*px+c*py;
- var svg=el("rotation-svg"),ox=290,oy=195,s=66;svg.replaceChildren();marker(svg,"axis-arrow","var(--ink2)");marker(svg,"old-arrow","var(--muted)");marker(svg,"rotation-arrow","var(--rotate)");grid(svg,ox,oy,s,-3.7,3.7,-2.7,2.7,"x","y");
+ var svg=el("rotation-svg"),ox=290,oy=195,s=66;
+ svg.replaceChildren();
+ marker(svg,"axis-arrow","var(--ink2)");
+ marker(svg,"old-arrow","var(--muted)");
+ marker(svg,"basis-x-arrow","var(--move)");
+ marker(svg,"basis-y-arrow","var(--camera)");
+ marker(svg,"rotation-arrow","var(--rotate)");
+ grid(svg,ox,oy,s,-3.7,3.7,-2.7,2.7,"x","y");
  var exx=ox+c*s,exy=oy-sn*s,eyx=ox-sn*s,eyy=oy-c*s;
- svg.appendChild(node("line",{x1:ox,y1:oy,x2:exx,y2:exy,stroke:"var(--move)","stroke-width":2,"marker-end":"url(#rotation-arrow)"}));
- svg.appendChild(node("line",{x1:ox,y1:oy,x2:eyx,y2:eyy,stroke:"var(--camera)","stroke-width":2,"marker-end":"url(#rotation-arrow)"}));
- svg.appendChild(node("text",{x:exx+7,y:exy-5,fill:"var(--move)","font-size":11},"回転後 x軸"));svg.appendChild(node("text",{x:eyx+7,y:eyy-5,fill:"var(--camera)","font-size":11},"回転後 y軸"));
  var ax=ox+px*s,ay=oy-py*s,bx=ox+qx*s,by=oy-qy*s;
+ var splitX=ox+px*s,splitY=oy,midX=ox+px*c*s,midY=oy-px*sn*s;
+ svg.appendChild(node("path",{d:"M "+ox+" "+oy+" L "+splitX+" "+splitY+" L "+ax+" "+ay,fill:"none",stroke:"var(--muted)","stroke-width":1.4,"stroke-dasharray":"4 4"}));
  svg.appendChild(node("line",{x1:ox,y1:oy,x2:ax,y2:ay,stroke:"var(--muted)","stroke-width":2,"stroke-dasharray":"5 4","marker-end":"url(#old-arrow)"}));
- svg.appendChild(node("line",{x1:ox,y1:oy,x2:bx,y2:by,stroke:"var(--rotate)","stroke-width":3,"marker-end":"url(#rotation-arrow)"}));
- point(svg,ax,ay,"var(--muted)","P (2, 1)",9,-9);point(svg,bx,by,"var(--rotate)","P′ ("+fmt(qx,2)+", "+fmt(qy,2)+")",9,qy>=0?-9:20);
+ svg.appendChild(node("line",{x1:ox,y1:oy,x2:bx,y2:by,stroke:"var(--rotate)","stroke-width":2,"stroke-dasharray":"5 4","marker-end":"url(#rotation-arrow)"}));
+ svg.appendChild(node("line",{x1:ox,y1:oy,x2:midX,y2:midY,stroke:"var(--move)","stroke-width":3,"marker-end":"url(#basis-x-arrow)"}));
+ svg.appendChild(node("line",{x1:midX,y1:midY,x2:bx,y2:by,stroke:"var(--camera)","stroke-width":3,"marker-end":"url(#basis-y-arrow)"}));
+ svg.appendChild(node("circle",{cx:exx,cy:exy,r:3.5,fill:"var(--move)",stroke:"var(--panel)","stroke-width":1.5}));
+ svg.appendChild(node("circle",{cx:eyx,cy:eyy,r:3.5,fill:"var(--camera)",stroke:"var(--panel)","stroke-width":1.5}));
+ svg.appendChild(node("text",{x:exx+7,y:exy+18,fill:"var(--move)","font-size":10.5},"R eₓ"));
+ svg.appendChild(node("text",{x:eyx+7,y:eyy-9,fill:"var(--camera)","font-size":10.5},"R eᵧ"));
+ svg.appendChild(node("text",{x:(ox+midX)/2+7,y:(oy+midY)/2-8,fill:"var(--move)","font-size":11.5},"2 R eₓ"));
+ svg.appendChild(node("text",{x:(midX+bx)/2+7,y:(midY+by)/2+18,fill:"var(--camera)","font-size":11.5},"1 R eᵧ"));
+ point(svg,ax,ay,"var(--muted)","P = 2eₓ + 1eᵧ",9,-9);
+ svg.appendChild(node("circle",{cx:bx,cy:by,r:5.5,fill:"var(--rotate)",stroke:"var(--panel)","stroke-width":2}));
+ svg.appendChild(node("text",{x:bx+(qx<0?-9:9),y:by+(qy>=0?-10:20),fill:"var(--rotate)","font-size":12.5,"font-weight":700,"text-anchor":qx<0?"end":"start"},"P′ ("+fmt(qx,2)+", "+fmt(qy,2)+")"));
  text("out-angle",fmt(deg,0)+"°");
- el("rotation-matrix").innerHTML="R("+fmt(deg,0)+"°) = [ "+fmt(c,3)+"　"+fmt(-sn,3)+" ]<br>　　　　 [ "+fmt(sn,3)+"　"+fmt(c,3)+" ]";
- el("rotation-calc").innerHTML="x′ = "+fmt(c,3)+" × 2 − "+fmt(sn,3)+" × 1 = <span class=\"answer-r\">"+fmt(qx,3)+"</span><br>y′ = "+fmt(sn,3)+" × 2 + "+fmt(c,3)+" × 1 = <span class=\"answer-r\">"+fmt(qy,3)+"</span><br>|P| = |P′| = √5 ≈ 2.236"
+ el("basis-x-calc").innerHTML="<span class=\"basis-x\">R e<sub>x</sub></span> = (cos θ, sin θ)<br>　　 = <span class=\"basis-x\">("+fmt(c,3)+", "+fmt(sn,3)+")</span>";
+ el("basis-y-calc").innerHTML="<span class=\"basis-y\">R e<sub>y</sub></span> = (−sin θ, cos θ)<br>　　 = <span class=\"basis-y\">("+fmt(-sn,3)+", "+fmt(c,3)+")</span>";
+ el("rotation-compose").innerHTML="P′ = 2 R e<sub>x</sub> + 1 R e<sub>y</sub><br>　 = <span class=\"answer-r\">("+fmt(qx,3)+", "+fmt(qy,3)+")</span>";
+ el("rotation-matrix").innerHTML="R("+fmt(deg,0)+"°) = [ <span class=\"basis-x\">"+fmt(c,3)+"</span>　<span class=\"basis-y\">"+fmt(-sn,3)+"</span> ]<br>　　　　 [ <span class=\"basis-x\">"+fmt(sn,3)+"</span>　<span class=\"basis-y\">"+fmt(c,3)+"</span> ]";
 }
 function drawCamera(){
  var cx=val("cx"),cz=val("cz"),deg=val("heading"),rad=deg*Math.PI/180,co=clean(Math.cos(rad)),si=clean(Math.sin(rad));
