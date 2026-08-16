@@ -671,11 +671,15 @@
         <div class="derive-step">
           <span class="label">3　小さな誤差として近似する</span>
           <p><em>|δp|</em> が <em>p</em> より十分小さければ、<em>p + δp ≈ p</em> とみなせます。</p>
-          <div class="mathline">δZ ≈ −K/p² · δp</div>
-          <p>誤差の大きさだけを考えるため、両辺の絶対値を取ります。</p>
-          <div class="mathline approx">|δZ| ≈ K/p² · |δp|</div>
+          <p>この近似で <em>p</em> に置き換えるのは分母の <em>p + δp</em> だけです。分子の <em>δp</em> は測定誤差そのものなので残ります。</p>
+          <div class="mathline">δZ ≈ −Kδp/(p · p)</div>
+          <div class="mathline">　 = −K/p² · δp</div>
+          <p>誤差の大きさだけを考えるため、両辺の絶対値を取ります。積の絶対値は、それぞれの絶対値の積に分けられます。</p>
+          <div class="mathline">|δZ| ≈ |−K/p²| · |δp|</div>
+          <div class="mathline approx">　　　 = K/p² · |δp|</div>
           <div class="mathline approx">　　 = Z/p · |δp|</div>
           <div class="mathline approx">　　 = Z²/(f<sub>x</sub>L) · |δp|</div>
+          <p><em>K/p²</em> は画像上の誤差 1 px あたりの距離誤差を表す係数（感度係数／sensitivity coefficient）です。この係数に実際の誤差 <em>|δp|</em> を掛けることで、距離誤差 <em>|δZ|</em> が求まります。</p>
         </div>
       </div>
 

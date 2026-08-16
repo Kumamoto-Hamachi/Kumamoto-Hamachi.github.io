@@ -194,6 +194,7 @@
   .guide:focus-visible::before { transform: scaleY(1); }
 
   .guide--exercise { --accent: var(--green); }
+  .guide--transform { --accent: var(--blue); }
   .guide--intrinsics { --accent: var(--violet); }
   .guide--aruco { --accent: var(--orange); }
 
@@ -276,7 +277,7 @@
   <div class="page">
     <div class="topbar">
       <span>Vision notes / camera geometry</span>
-      <span class="count">4 guides</span>
+      <span class="count">5 guides</span>
     </div>
 
     <header>
@@ -317,9 +318,19 @@
           <span class="arrow" aria-hidden="true">→</span>
         </a>
 
-        <a class="guide guide--intrinsics" href="camera-intrinsics.html">
+        <a class="guide guide--transform" href="rotation-translation-guide.html">
           <div class="guide-meta">
             <span class="guide-number">03</span>
+            <span>Linear algebra</span>
+          </div>
+          <h3>回転行列と<br>並進ベクトル</h3>
+          <p>ベクトル、回転、平行移動を図と具体的な計算で学び、世界座標からカメラ座標への変換を理解します。</p>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+
+        <a class="guide guide--intrinsics" href="camera-intrinsics.html">
+          <div class="guide-meta">
+            <span class="guide-number">04</span>
             <span>Calibration</span>
           </div>
           <h3>カメラ内部<br>パラメータ</h3>
@@ -329,7 +340,7 @@
 
         <a class="guide guide--aruco" href="aruco-rover-distance-guide.html">
           <div class="guide-meta">
-            <span class="guide-number">04</span>
+            <span class="guide-number">05</span>
             <span>Application</span>
           </div>
           <h3>ArUcoでローバーの<br>距離を測る</h3>

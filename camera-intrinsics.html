@@ -428,6 +428,7 @@
     color: var(--ink-2);
     font-size: 14px;
   }
+  .callout a { color: var(--ray); }
 
   /* ---------- closing ---------- */
 
@@ -616,6 +617,10 @@
       逆に、カメラ自身が世界座標のどこにいるかは −R<sup>T</sup>t という式で逆算します
       （R<sup>T</sup> は R の行と列を入れ替えた「転置行列」です）。
       solvePnP の結果を読むときに取り違えやすい点なので、先にここで区別しておきます。
+    </p>
+    <p class="callout">
+      <b>R と t を初めて学ぶ場合</b>は、先に<a href="rotation-translation-guide.html">「回転行列と並進ベクトル」</a>を読むと、
+      ベクトルの足し算からカメラ座標への書き換えまでを、動く図と具体的な数値で確認できます。
     </p>
 
     <p class="prose">

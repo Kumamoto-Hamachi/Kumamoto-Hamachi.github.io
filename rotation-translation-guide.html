@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="回転行列と並進ベクトルを、図と具体的な数値計算で基礎から学ぶ線形代数入門ガイド。">
+<title>回転行列と並進ベクトル</title>
+<style>
+:root{
+  --ground:#e7eaee;--surface:#f1f3f6;--panel:#fdfdfe;--ink:#151a22;--ink2:#454f5e;
+  --muted:#78828f;--line:#c6ccd5;--soft:#dde1e7;--rotate:#6555a3;--move:#c26c15;
+  --world:#3f7a52;--camera:#2e7d9a;--warn:#ac403a;
+  --mincho:"Hiragino Mincho ProN","Yu Mincho",YuMincho,"Noto Serif CJK JP","Noto Serif JP",serif;
+  --gothic:"Hiragino Sans","Noto Sans CJK JP","Noto Sans JP","Yu Gothic",Meiryo,system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,"Cascadia Code","Roboto Mono",Menlo,Consolas,monospace
+}
+@media(prefers-color-scheme:dark){:root{
+  --ground:#10141a;--surface:#161b23;--panel:#1b212a;--ink:#e4e9f0;--ink2:#aab4c2;
+  --muted:#7c8695;--line:#333c48;--soft:#262e39;--rotate:#b2a4ed;--move:#efa85c;
+  --world:#74b98c;--camera:#5ab2ce;--warn:#e07a72
+}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.85 var(--gothic);-webkit-font-smoothing:antialiased}
+.wrap{width:min(1140px,calc(100% - 32px));margin:auto;padding:clamp(28px,5vw,64px) 0 88px;display:flex;flex-direction:column;gap:76px}
+.topline{display:flex;justify-content:space-between;gap:20px;padding-bottom:16px;border-bottom:1px solid var(--line);color:var(--muted);font:10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.topline a{color:inherit;text-decoration:none}.topline a:hover{color:var(--ink)}
+header,.sec-head,section{display:flex;flex-direction:column}header{gap:20px}section{gap:26px}.sec-head{gap:12px}
+.eyebrow,.sec-no{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase}
+.eyebrow{color:var(--rotate);font-weight:700}.sec-no{color:var(--muted)}
+h1,h2,h3{margin:0;font-family:var(--mincho);font-weight:600;letter-spacing:.02em}h1,h2{text-wrap:balance}
+h1{max-width:14em;font-size:clamp(32px,5.5vw,49px);line-height:1.3;word-break:keep-all}
+h2{font-size:clamp(22px,3.2vw,29px);line-height:1.5}h3{font-size:clamp(17px,2.3vw,21px)}
+.lede,.prose{max-width:43em;margin:0;color:var(--ink2)}.lede strong,.prose strong{color:var(--ink);font-weight:650}
+code,.mono{font-family:var(--mono);font-size:.93em}
+.goal-strip{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-left:1px solid var(--line)}
+.goal{min-height:116px;padding:18px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel)}
+.goal b{display:block;margin-bottom:7px;color:var(--rotate);font:700 11px var(--mono);letter-spacing:.1em}
+.goal span{color:var(--ink2);font-size:13.5px;line-height:1.65}
+.equation{display:flex;align-items:center;gap:.55em;flex-wrap:wrap;overflow-x:auto;padding:5px 0;font:clamp(14px,2vw,18px)/1.5 var(--mono);font-variant-numeric:tabular-nums}
+.op{color:var(--muted)}.hot-r{color:var(--rotate);font-weight:700}.hot-t{color:var(--move);font-weight:700}.hot-c{color:var(--camera);font-weight:700}
+.mat{display:inline-grid;position:relative;gap:.14em .78em;padding:.4em .65em;line-height:1.45;vertical-align:middle}
+.mat:before,.mat:after{content:"";position:absolute;top:0;bottom:0;width:.38em;border:1.5px solid var(--ink2)}
+.mat:before{left:0;border-right:0}.mat:after{right:0;border-left:0}
+.mat.c1{grid-template-columns:auto}.mat.c2{grid-template-columns:repeat(2,auto)}.mat.c3{grid-template-columns:repeat(3,auto)}.mat.c4{grid-template-columns:repeat(4,auto)}
+.mat>span{min-width:1.3em;text-align:center}
+.concept-grid,.basis-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;border:1px solid var(--line);background:var(--line)}
+.concept,.basis-card{padding:clamp(19px,3vw,27px);background:var(--panel)}
+.tag{display:block;margin-bottom:7px;color:var(--muted);font:10.5px var(--mono);letter-spacing:.13em;text-transform:uppercase}
+.concept h3{margin-bottom:12px}.concept p,.basis-card p{margin:0;color:var(--ink2);font-size:13.5px}
+.basis-card b{display:block;margin-bottom:8px;color:var(--rotate);font-family:var(--mono)}
+.fig{border:1px solid var(--line);background:var(--panel)}
+.fig-bar{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:9px 16px;border-bottom:1px solid var(--soft);background:var(--surface);color:var(--muted);font:11px var(--mono);letter-spacing:.08em}
+.fig-bar b{color:var(--ink2);letter-spacing:.14em}.fig-bar .note{margin-left:auto;letter-spacing:.03em}
+.fig-body{padding:clamp(13px,2.6vw,22px);overflow-x:auto}
+.visual-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(270px,.65fr);gap:24px;align-items:center}
+svg{display:block;width:100%;height:auto}svg text{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.readout{display:flex;flex-direction:column;gap:13px;min-width:0}.readout-label{color:var(--muted);font:10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.math-card{padding:15px 16px;border:1px solid var(--soft);background:var(--surface);color:var(--ink2);font:13px/1.85 var(--mono);font-variant-numeric:tabular-nums;overflow-x:auto}
+.answer{color:var(--move);font-weight:700}.answer-r{color:var(--rotate);font-weight:700}.answer-c{color:var(--camera);font-weight:700}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px 28px;padding:16px;border-top:1px solid var(--soft)}
+.ctrl{display:flex;flex-direction:column;gap:5px}.ctrl-head{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font:11.5px var(--mono)}
+output{color:var(--ink);font-size:13px;font-weight:700}input[type=range]{width:100%;height:24px;margin:0;accent-color:var(--rotate);cursor:ew-resize}
+.ctrl-scale{display:flex;justify-content:space-between;color:var(--muted);font:9.5px var(--mono)}
+.step-stack{counter-reset:step;border-top:1px solid var(--line)}.step{counter-increment:step;display:grid;grid-template-columns:48px minmax(0,1fr);gap:16px;padding:21px 0;border-bottom:1px solid var(--line)}
+.step:before{content:counter(step,decimal-leading-zero);color:var(--rotate);font:700 12px var(--mono);letter-spacing:.08em}
+.step p{max-width:47em;margin:6px 0 0;color:var(--ink2)}
+.callout{max-width:47em;padding:18px 20px;border-left:3px solid var(--move);background:var(--surface);color:var(--ink2)}
+.callout strong{color:var(--ink)}.callout--camera{border-left-color:var(--camera)}.callout p{margin:0}.callout p+p{margin-top:10px}
+.compare{width:100%;border-collapse:collapse;border:1px solid var(--line);background:var(--panel)}
+.compare th,.compare td{padding:13px 15px;border-bottom:1px solid var(--soft);text-align:left;vertical-align:top}
+.compare th{background:var(--surface);color:var(--muted);font:600 10.5px var(--mono);letter-spacing:.08em}
+.compare td{color:var(--ink2);font-size:13.5px}.compare td:first-child{color:var(--ink);font-weight:650}
+.flow{display:flex;gap:11px;align-items:stretch;overflow-x:auto}.flow-box{flex:1 0 180px;padding:15px;border:1px solid var(--line);background:var(--panel);text-align:center;font:13px var(--mono)}
+.flow-box small{display:block;margin-top:5px;color:var(--muted);font-size:10px}.flow-arrow{align-self:center;color:var(--muted);font-family:var(--mono)}
+.quiz{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}details{border:1px solid var(--line);background:var(--panel)}
+summary{padding:16px;cursor:pointer;font-weight:650}details p{margin:0;padding:0 16px 17px;color:var(--ink2);font-size:13.5px}
+.next{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:clamp(22px,4vw,34px);border:1px solid var(--line);background:var(--panel);color:inherit;text-decoration:none}
+.next:hover{background:var(--surface)}.next small{display:block;color:var(--muted);font:10px var(--mono);letter-spacing:.1em}.next b{display:block;margin-top:5px;font:600 21px var(--mincho)}.next .arrow{color:var(--rotate);font:24px var(--mono)}
+footer{padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font:10px/1.8 var(--mono);letter-spacing:.06em}
+@media(max-width:760px){.goal-strip,.quiz,.visual-grid,.concept-grid,.basis-grid{grid-template-columns:1fr}.topline span:last-child{display:none}.compare{min-width:650px}.table-scroll{overflow-x:auto}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topline"><a href="index.html">← Guide index</a><span>Linear algebra for camera geometry</span></div>
+  <header>
+    <div class="eyebrow">Foundation / extrinsic parameters</div>
+    <h1>回転行列と<wbr>並進ベクトル</h1>
+    <p class="lede">カメラ幾何で頻出する <strong>R と t</strong> は、難しい記号に見えても、役割は「向きを変える」と「位置をずらす」の二つだけです。このページでは、まず 2D の矢印を動かして仕組みをつかみ、最後に 3D のカメラ座標変換へつなげます。行列を初めて見る人でも、足し算と掛け算を順番に追えば読める構成です。</p>
+    <div class="goal-strip" aria-label="このページのゴール">
+      <div class="goal"><b>GOAL 1</b><span>ベクトルを「向きと長さを持つ数の組」として読める</span></div>
+      <div class="goal"><b>GOAL 2</b><span>回転 R と並進 t を、具体的な数で手計算できる</span></div>
+      <div class="goal"><b>GOAL 3</b><span>カメラの式 P<sub>c</sub> = RP<sub>w</sub> + t の意味を説明できる</span></div>
+    </div>
+  </header>
+
+  <section id="vector">
+    <div class="sec-head">
+      <span class="sec-no">01 / Vector</span><h2>ベクトルは「数をひとまとめにした矢印」</h2>
+      <p class="prose">位置を表すには、横方向だけでなく縦方向の数も必要です。点 P が「右へ 2、上へ 1」の場所にあるなら、位置を <strong>P = (2, 1)</strong> と書けます。このように複数の数を順番にまとめたものがベクトルです。図では、原点から点 P へ伸びる矢印として描けます。</p>
+    </div>
+    <div class="concept-grid">
+      <div class="concept"><span class="tag">Position vector</span><h3>点の住所として読む</h3><p>(2, 1) は「原点から右へ 2、上へ 1」。成分の順番には意味があり、通常は (x, y)、3D なら (x, y, z) と並べます。</p></div>
+      <div class="concept"><span class="tag">Displacement vector</span><h3>移動量として読む</h3><p>(3, −2) は「今いる場所から右へ 3、下へ 2」。同じ数の組でも、文脈によって位置にも移動にもなります。</p></div>
+    </div>
+    <div class="equation"><span>P</span><span class="op">=</span><span class="mat c1"><span>2</span><span>1</span></span><span class="op">← 横に (2, 1) と書いても、縦に並べても同じ二つの成分</span></div>
+  </section>
+
+  <section id="translation">
+    <div class="sec-head">
+      <span class="sec-no">02 / Translation</span><h2>並進ベクトル t は、全員に同じ移動を足す</h2>
+      <p class="prose"><strong>並進（translation）</strong>は、回したり伸ばしたりせず、同じ向きに同じ距離だけ平行移動する操作です。点 P に移動量 t を成分ごとに足せば、新しい点 P′ が得られます。</p>
+    </div>
+    <div class="fig">
+      <div class="fig-bar"><b>FIG. 1</b><span>並進はベクトルの足し算</span><span class="note">スライダーを動かせます</span></div>
+      <div class="fig-body"><div class="visual-grid">
+        <svg id="translation-svg" viewBox="0 0 580 390" role="img" aria-label="点Pを並進ベクトルtで移動する座標平面"></svg>
+        <div class="readout"><span class="readout-label">component-wise calculation</span>
+          <div class="equation"><span>P′</span><span class="op">=</span><span>P</span><span class="op">+</span><span class="hot-t">t</span></div>
+          <div class="math-card" id="translation-calc" aria-live="polite"></div>
+          <p class="prose" style="font-size:13px">x どうし、y どうしを足します。斜めの矢印を直接計算する必要はありません。</p>
+        </div>
+      </div></div>
+      <div class="controls">
+        <label class="ctrl"><span class="ctrl-head"><span>t<sub>x</sub> / 横の移動</span><output id="out-tx">3</output></span><input id="tx" type="range" min="-4" max="4" step="1" value="3"><span class="ctrl-scale"><span>左 −4</span><span>右 +4</span></span></label>
+        <label class="ctrl"><span class="ctrl-head"><span>t<sub>y</sub> / 縦の移動</span><output id="out-ty">−2</output></span><input id="ty" type="range" min="-4" max="4" step="1" value="-2"><span class="ctrl-scale"><span>下 −4</span><span>上 +4</span></span></label>
+      </div>
+    </div>
+    <div class="callout"><p><strong>並進では、点どうしの形や距離は変わりません。</strong> 図形のすべての頂点に同じ t を足すと、図形全体がそのまま滑ります。原点だけは (0, 0) + t = t へ移るため、t は「移動後の原点の住所」としても読めます。</p></div>
+  </section>
+
+  <section id="rotation">
+    <div class="sec-head">
+      <span class="sec-no">03 / Rotation matrix</span><h2>回転行列 R は、長さを保ったまま向きを変える</h2>
+      <p class="prose"><strong>回転行列（rotation matrix）</strong>は、ベクトルに掛けると向きだけを変える数の表です。2D で原点を中心に反時計回りへ θ 回す行列は、下の 2×2 です。cos θ と sin θ は、回した後の横成分と縦成分を分けるための数だと思えば十分です。</p>
+    </div>
+    <div class="equation"><span class="hot-r">R(θ)</span><span class="op">=</span><span class="mat c2"><span>cos θ</span><span>−sin θ</span><span>sin θ</span><span>cos θ</span></span><span class="op">,</span><span>P′</span><span class="op">=</span><span class="hot-r">R(θ)</span><span>P</span></div>
+    <div class="fig">
+      <div class="fig-bar"><b>FIG. 2</b><span>点 P = (2, 1) を原点のまわりに回す</span><span class="note">長さは常に √5</span></div>
+      <div class="fig-body"><div class="visual-grid">
+        <svg id="rotation-svg" viewBox="0 0 580 390" role="img" aria-label="ベクトルPを原点の周りに回転する座標平面"></svg>
+        <div class="readout"><span class="readout-label">row by column</span><div class="math-card" id="rotation-matrix" aria-live="polite"></div><div class="math-card" id="rotation-calc"></div></div>
+      </div></div>
+      <div class="controls"><label class="ctrl"><span class="ctrl-head"><span>θ / 反時計回りの角度</span><output id="out-angle">90°</output></span><input id="angle" type="range" min="-180" max="180" step="15" value="90"><span class="ctrl-scale"><span>−180°</span><span>0°</span><span>+180°</span></span></label></div>
+    </div>
+    <div class="step-stack">
+      <div class="step"><div><h3>1 行目で、新しい x を作る</h3><p>x′ = cos θ × x − sin θ × y。行列の 1 行目と、ベクトルの上から下をペアで掛けて足します。</p></div></div>
+      <div class="step"><div><h3>2 行目で、新しい y を作る</h3><p>y′ = sin θ × x + cos θ × y。同じ元の x, y を、今度は 2 行目と掛けます。</p></div></div>
+      <div class="step"><div><h3>90° の具体例</h3><p>cos 90° = 0、sin 90° = 1 なので、(2, 1) は (0×2 − 1×1, 1×2 + 0×1) = (−1, 2) になります。</p></div></div>
+    </div>
+    <div class="basis-grid">
+      <div class="basis-card"><b>R の 1 列目 = (cos θ, sin θ)</b><p>元の x 軸の単位ベクトル (1, 0) が、回転後にどちらを向くかを表します。</p></div>
+      <div class="basis-card"><b>R の 2 列目 = (−sin θ, cos θ)</b><p>元の y 軸の単位ベクトル (0, 1) が、回転後にどちらを向くかを表します。行列の列は「回した後の軸」です。</p></div>
+    </div>
+    <div class="callout"><p><strong>回転行列の逆は、角度を反対にした回転です。</strong> R(θ)<sup>−1</sup> = R(−θ)。回転行列では、行と列を入れ替えた転置 R<sup>T</sup> も同じものになるため、R<sup>−1</sup> = R<sup>T</sup> と書けます。</p></div>
+  </section>
+
+  <section id="combine">
+    <div class="sec-head">
+      <span class="sec-no">04 / Composition</span><h2>回してから、ずらす：P′ = RP + t</h2>
+      <p class="prose">R と t を一緒に使うと、「向きを変えた後で、別の位置へ運ぶ」操作になります。計算順序は式のとおりで、<strong>先に RP を計算し、その結果に t を足します</strong>。行列とベクトルの掛け算を先にするのは、通常の掛け算を足し算より先にするのと同じです。</p>
+    </div>
+    <div class="flow" aria-label="回転と並進の順番">
+      <div class="flow-box">元の点 P<small>(2, 1)</small></div><div class="flow-arrow">→ R →</div>
+      <div class="flow-box">回転した点 RP<small>90° なら (−1, 2)</small></div><div class="flow-arrow">→ + t →</div>
+      <div class="flow-box">結果 RP + t<small>t = (3, −2) なら (2, 0)</small></div>
+    </div>
+    <div class="equation"><span>P′</span><span class="op">=</span><span class="hot-r mat c2"><span>0</span><span>−1</span><span>1</span><span>0</span></span><span class="mat c1"><span>2</span><span>1</span></span><span class="op">+</span><span class="hot-t mat c1"><span>3</span><span>−2</span></span><span class="op">=</span><span class="mat c1"><span>−1</span><span>2</span></span><span class="op">+</span><span class="mat c1"><span>3</span><span>−2</span></span><span class="op">=</span><span class="mat c1"><span>2</span><span>0</span></span></div>
+    <div class="callout"><p><strong>順番を変えると、一般には別の答えです。</strong> R(P + t) は、点だけでなく移動量 t まで回します。RP + t は、回転した後に世界の軸に沿って t だけ動かします。カメラの外部パラメータは RP + t の形です。</p></div>
+  </section>
+
+  <section id="coordinates">
+    <div class="sec-head">
+      <span class="sec-no">05 / Camera coordinates</span><h2>カメラでは「点を動かす」のではなく、住所を書き換える</h2>
+      <p class="prose">ここが最も大切な切り替えです。カメラの式では、現実の点を動かしているわけではありません。同じ点 P を、世界に固定したものさしで測った住所 P<sub>w</sub> から、カメラを原点とするものさしで測った住所 P<sub>c</sub> へ<strong>書き換えています</strong>。</p>
+    </div>
+    <div class="table-scroll"><table class="compare">
+      <thead><tr><th></th><th>点を動かす見方（active）</th><th>座標系を書き換える見方（passive）</th></tr></thead>
+      <tbody><tr><td>現実の点</td><td>別の場所へ動く</td><td>同じ場所に留まる</td></tr><tr><td>ものさし</td><td>固定されたまま</td><td>世界のものさしからカメラのものさしへ交換</td></tr><tr><td>カメラ幾何</td><td>理解の練習に便利</td><td>外部パラメータ R, t が行うこと</td></tr></tbody>
+    </table></div>
+    <div class="equation"><span class="hot-c">P<sub>c</sub></span><span class="op">=</span><span class="hot-r">R</span><span>P<sub>w</sub></span><span class="op">+</span><span class="hot-t">t</span><span class="op">=</span><span class="hot-r">R</span><span>(P<sub>w</sub> − C)</span></div>
+    <p class="prose">C は「世界座標で見たカメラの位置」です。まず P<sub>w</sub> − C で、カメラを原点にした相対位置を作ります。次に R を掛けて、世界の軸向きからカメラの軸向きへ成分を読み替えます。二つの式を比べると、<strong>t = −RC</strong> だと分かります。</p>
+    <div class="fig">
+      <div class="fig-bar"><b>FIG. 3</b><span>世界座標からカメラ座標へ</span><span class="note">上から見た X–Z 平面</span></div>
+      <div class="fig-body"><div class="visual-grid">
+        <svg id="camera-svg" viewBox="0 0 580 440" role="img" aria-label="世界座標上のカメラと点を上から見た図"></svg>
+        <div class="readout"><span class="readout-label">world → camera</span><div class="math-card" id="camera-r"></div><div class="math-card" id="camera-calc" aria-live="polite"></div><p class="prose" id="camera-meaning" style="font-size:13px"></p></div>
+      </div></div>
+      <div class="controls">
+        <label class="ctrl"><span class="ctrl-head"><span>C<sub>x</sub> / カメラの世界X</span><output id="out-cx">2</output></span><input id="cx" type="range" min="-3" max="3" step="1" value="2"><span class="ctrl-scale"><span>−3</span><span>+3</span></span></label>
+        <label class="ctrl"><span class="ctrl-head"><span>C<sub>z</sub> / カメラの世界Z</span><output id="out-cz">1</output></span><input id="cz" type="range" min="-3" max="3" step="1" value="1"><span class="ctrl-scale"><span>−3</span><span>+3</span></span></label>
+        <label class="ctrl"><span class="ctrl-head"><span>θ / +Zから右を向く角度</span><output id="out-heading">90°</output></span><input id="heading" type="range" min="-180" max="180" step="15" value="90"><span class="ctrl-scale"><span>−180°</span><span>+180°</span></span></label>
+      </div>
+    </div>
+    <div class="callout callout--camera">
+      <p><strong>t はカメラ位置 C そのものではありません。</strong> t は「世界座標の原点をカメラ座標で表した住所」です。カメラ位置が欲しいときは、式を逆に解いて C = −R<sup>T</sup>t とします。</p>
+      <p>初期値では C = (2, 1)、カメラは世界の +X 方向を向き、P<sub>w</sub> = (5, 3) です。結果 P<sub>c</sub> = (−2, 3) は「点はカメラの左 2 m、前 3 m」という意味になります。</p>
+    </div>
+  </section>
+
+  <section id="three-d">
+    <div class="sec-head">
+      <span class="sec-no">06 / From 2D to 3D</span><h2>3D でも仕組みは同じ。成分が一つ増えるだけ</h2>
+      <p class="prose">3D では P が (X, Y, Z) の 3 成分、t も (t<sub>x</sub>, t<sub>y</sub>, t<sub>z</sub>) の 3 成分になり、R は 3×3 になります。行列の各行とベクトルの 3 成分を掛けて足す規則は、2D とまったく同じです。</p>
+    </div>
+    <div class="equation">
+      <span class="mat c1"><span>X<sub>c</sub></span><span>Y<sub>c</sub></span><span>Z<sub>c</sub></span></span><span class="op">=</span>
+      <span class="hot-r mat c3"><span>r<sub>11</sub></span><span>r<sub>12</sub></span><span>r<sub>13</sub></span><span>r<sub>21</sub></span><span>r<sub>22</sub></span><span>r<sub>23</sub></span><span>r<sub>31</sub></span><span>r<sub>32</sub></span><span>r<sub>33</sub></span></span>
+      <span class="mat c1"><span>X<sub>w</sub></span><span>Y<sub>w</sub></span><span>Z<sub>w</sub></span></span><span class="op">+</span><span class="hot-t mat c1"><span>t<sub>x</sub></span><span>t<sub>y</sub></span><span>t<sub>z</sub></span></span>
+    </div>
+    <p class="prose">R の 1 行目は X<sub>c</sub>、2 行目は Y<sub>c</sub>、3 行目は Z<sub>c</sub> を作ります。OpenCV のカメラ座標は <strong>X<sub>c</sub> が右、Y<sub>c</sub> が下、Z<sub>c</sub> が前</strong>です。特に Z<sub>c</sub> は、ピンホール投影で使う「カメラから見た奥行き」になります。</p>
+    <div class="concept-grid">
+      <div class="concept"><span class="tag">Extrinsic matrix</span><h3>R と t を横に並べる</h3>
+        <div class="equation" style="font-size:13px"><span>[R | t]</span><span class="op">=</span><span class="mat c4"><span>r<sub>11</sub></span><span>r<sub>12</sub></span><span>r<sub>13</sub></span><span>t<sub>x</sub></span><span>r<sub>21</sub></span><span>r<sub>22</sub></span><span>r<sub>23</sub></span><span>t<sub>y</sub></span><span>r<sub>31</sub></span><span>r<sub>32</sub></span><span>r<sub>33</sub></span><span>t<sub>z</sub></span></span></div>
+        <p>これが 3×4 の外部パラメータ行列です。P<sub>w</sub> の末尾に 1 を足した (X, Y, Z, 1) を掛けると、最後の列 t も同じ掛け算にまとめられます。</p>
+      </div>
+      <div class="concept"><span class="tag">OpenCV solvePnP</span><h3>rvec と tvec</h3><p><code>solvePnP</code> は R を 9 個の数ではなく、回転軸と角度をまとめた 3 成分の <code>rvec</code> で返します。<code>cv2.Rodrigues(rvec)</code> で 3×3 の R に変換できます。<code>tvec</code> はこのページの t です。</p></div>
+    </div>
+  </section>
+
+  <section id="check">
+    <div class="sec-head"><span class="sec-no">07 / Checkpoint</span><h2>三問で理解を確認する</h2><p class="prose">答えを考えてから、各カードを開いてください。</p></div>
+    <div class="quiz">
+      <details><summary>Q1. t = (−2, 3) はどう動く？</summary><p>すべての点を左へ 2、上へ 3 動かします。P = (4, 1) なら P + t = (2, 4) です。</p></details>
+      <details><summary>Q2. 90°回転で (1, 0) は？</summary><p>反時計回りなら (0, 1) です。R の 1 列目を見るだけでも答えられます。</p></details>
+      <details><summary>Q3. t はカメラ位置？</summary><p>違います。t は世界原点のカメラ座標です。世界座標でのカメラ位置は C = −R<sup>T</sup>t です。</p></details>
+    </div>
+  </section>
+
+  <a class="next" href="camera-intrinsics.html"><span><small>NEXT GUIDE</small><b>カメラ内部パラメータへ進む</b></span><span class="arrow" aria-hidden="true">→</span></a>
+  <footer>図はページ内の JavaScript で計算しています。FIG. 3 は説明を平面に絞るため、世界とカメラの X–Z 平面を上から見ています。3D の符号と軸方向は OpenCV の規約（X 右・Y 下・Z 前方）に接続しています。</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var NS="http://www.w3.org/2000/svg";
+function el(id){return document.getElementById(id)}
+function val(id){return Number(el(id).value)}
+function clean(n){return Math.abs(n)<.00001?0:n}
+function fmt(n,d){n=clean(n);var s=n.toFixed(d);if(d)s=s.replace(/\.0+$/,"").replace(/(\.\d*?)0+$/,"$1");return s.replace("-","−")}
+function signed(n,d){return n>=0?"+ "+fmt(n,d):"− "+fmt(Math.abs(n),d)}
+function text(id,s){el(id).textContent=s}
+function node(name,a,t){var n=document.createElementNS(NS,name);Object.keys(a||{}).forEach(function(k){n.setAttribute(k,a[k])});if(t!==undefined)n.textContent=t;return n}
+function marker(svg,id,color){var defs=node("defs"),m=node("marker",{id:id,viewBox:"0 0 10 10",refX:"8",refY:"5",markerWidth:"6",markerHeight:"6",orient:"auto-start-reverse"});m.appendChild(node("path",{d:"M 0 0 L 10 5 L 0 10 z",fill:color}));defs.appendChild(m);svg.appendChild(defs)}
+function grid(svg,ox,oy,s,xmin,xmax,ymin,ymax,xn,yn){
+ var i,x,y;
+ for(i=Math.ceil(xmin);i<=Math.floor(xmax);i++){x=ox+i*s;svg.appendChild(node("line",{x1:x,y1:oy-ymax*s,x2:x,y2:oy-ymin*s,stroke:"var(--soft)","stroke-width":1}));if(i!==0)svg.appendChild(node("text",{x:x,y:oy+17,fill:"var(--muted)","font-size":10,"text-anchor":"middle"},String(i)))}
+ for(i=Math.ceil(ymin);i<=Math.floor(ymax);i++){y=oy-i*s;svg.appendChild(node("line",{x1:ox+xmin*s,y1:y,x2:ox+xmax*s,y2:y,stroke:"var(--soft)","stroke-width":1}));if(i!==0)svg.appendChild(node("text",{x:ox-10,y:y+4,fill:"var(--muted)","font-size":10,"text-anchor":"end"},String(i)))}
+ svg.appendChild(node("line",{x1:ox+xmin*s,y1:oy,x2:ox+xmax*s,y2:oy,stroke:"var(--ink2)","stroke-width":1.3,"marker-end":"url(#axis-arrow)"}));
+ svg.appendChild(node("line",{x1:ox,y1:oy-ymin*s,x2:ox,y2:oy-ymax*s,stroke:"var(--ink2)","stroke-width":1.3,"marker-end":"url(#axis-arrow)"}));
+ svg.appendChild(node("text",{x:ox+xmax*s-8,y:oy-10,fill:"var(--ink2)","font-size":12},xn));
+ svg.appendChild(node("text",{x:ox+10,y:oy-ymax*s+15,fill:"var(--ink2)","font-size":12},yn))
+}
+function point(svg,x,y,color,label,dx,dy){svg.appendChild(node("circle",{cx:x,cy:y,r:5.5,fill:color,stroke:"var(--panel)","stroke-width":2}));svg.appendChild(node("text",{x:x+dx,y:y+dy,fill:color,"font-size":12.5,"font-weight":700},label))}
+function drawTranslation(){
+ var tx=val("tx"),ty=val("ty"),px=2,py=1,qx=px+tx,qy=py+ty,svg=el("translation-svg"),ox=250,oy=195,s=42;
+ svg.replaceChildren();marker(svg,"axis-arrow","var(--ink2)");marker(svg,"move-arrow","var(--move)");grid(svg,ox,oy,s,-5.2,7.2,-4.2,4.2,"x","y");
+ var ax=ox+px*s,ay=oy-py*s,bx=ox+qx*s,by=oy-qy*s;
+ svg.appendChild(node("line",{x1:ax,y1:ay,x2:bx,y2:by,stroke:"var(--move)","stroke-width":2.5,"marker-end":"url(#move-arrow)"}));
+ point(svg,ax,ay,"var(--ink2)","P (2, 1)",10,-10);point(svg,bx,by,"var(--move)","P′ ("+fmt(qx,0)+", "+fmt(qy,0)+")",10,qy>=py?-10:20);
+ svg.appendChild(node("text",{x:(ax+bx)/2+8,y:(ay+by)/2-9,fill:"var(--move)","font-size":12},"t = ("+fmt(tx,0)+", "+fmt(ty,0)+")"));
+ text("out-tx",fmt(tx,0));text("out-ty",fmt(ty,0));
+ el("translation-calc").innerHTML="x′ = 2 "+signed(tx,0)+" = <span class=\"answer\">"+fmt(qx,0)+"</span><br>y′ = 1 "+signed(ty,0)+" = <span class=\"answer\">"+fmt(qy,0)+"</span><br>P′ = <span class=\"answer\">("+fmt(qx,0)+", "+fmt(qy,0)+")</span>"
+}
+function drawRotation(){
+ var deg=val("angle"),rad=deg*Math.PI/180,c=clean(Math.cos(rad)),sn=clean(Math.sin(rad)),px=2,py=1,qx=c*px-sn*py,qy=sn*px+c*py;
+ var svg=el("rotation-svg"),ox=290,oy=195,s=66;svg.replaceChildren();marker(svg,"axis-arrow","var(--ink2)");marker(svg,"old-arrow","var(--muted)");marker(svg,"rotation-arrow","var(--rotate)");grid(svg,ox,oy,s,-3.7,3.7,-2.7,2.7,"x","y");
+ var exx=ox+c*s,exy=oy-sn*s,eyx=ox-sn*s,eyy=oy-c*s;
+ svg.appendChild(node("line",{x1:ox,y1:oy,x2:exx,y2:exy,stroke:"var(--move)","stroke-width":2,"marker-end":"url(#rotation-arrow)"}));
+ svg.appendChild(node("line",{x1:ox,y1:oy,x2:eyx,y2:eyy,stroke:"var(--camera)","stroke-width":2,"marker-end":"url(#rotation-arrow)"}));
+ svg.appendChild(node("text",{x:exx+7,y:exy-5,fill:"var(--move)","font-size":11},"回転後 x軸"));svg.appendChild(node("text",{x:eyx+7,y:eyy-5,fill:"var(--camera)","font-size":11},"回転後 y軸"));
+ var ax=ox+px*s,ay=oy-py*s,bx=ox+qx*s,by=oy-qy*s;
+ svg.appendChild(node("line",{x1:ox,y1:oy,x2:ax,y2:ay,stroke:"var(--muted)","stroke-width":2,"stroke-dasharray":"5 4","marker-end":"url(#old-arrow)"}));
+ svg.appendChild(node("line",{x1:ox,y1:oy,x2:bx,y2:by,stroke:"var(--rotate)","stroke-width":3,"marker-end":"url(#rotation-arrow)"}));
+ point(svg,ax,ay,"var(--muted)","P (2, 1)",9,-9);point(svg,bx,by,"var(--rotate)","P′ ("+fmt(qx,2)+", "+fmt(qy,2)+")",9,qy>=0?-9:20);
+ text("out-angle",fmt(deg,0)+"°");
+ el("rotation-matrix").innerHTML="R("+fmt(deg,0)+"°) = [ "+fmt(c,3)+"　"+fmt(-sn,3)+" ]<br>　　　　 [ "+fmt(sn,3)+"　"+fmt(c,3)+" ]";
+ el("rotation-calc").innerHTML="x′ = "+fmt(c,3)+" × 2 − "+fmt(sn,3)+" × 1 = <span class=\"answer-r\">"+fmt(qx,3)+"</span><br>y′ = "+fmt(sn,3)+" × 2 + "+fmt(c,3)+" × 1 = <span class=\"answer-r\">"+fmt(qy,3)+"</span><br>|P| = |P′| = √5 ≈ 2.236"
+}
+function drawCamera(){
+ var cx=val("cx"),cz=val("cz"),deg=val("heading"),rad=deg*Math.PI/180,co=clean(Math.cos(rad)),si=clean(Math.sin(rad));
+ var px=5,pz=3,dx=px-cx,dz=pz-cz,xc=co*dx-si*dz,zc=si*dx+co*dz,tx=-co*cx+si*cz,tz=-si*cx-co*cz;
+ var svg=el("camera-svg"),ox=250,oy=350,s=49;svg.replaceChildren();marker(svg,"axis-arrow","var(--ink2)");marker(svg,"camera-arrow","var(--camera)");grid(svg,ox,oy,s,-4.3,6.3,-1.2,7.2,"Xw","Zw");
+ var camX=ox+cx*s,camY=oy-cz*s,pX=ox+px*s,pY=oy-pz*s,rightX=co,rightZ=-si,frontX=si,frontZ=co;
+ svg.appendChild(node("line",{x1:camX,y1:camY,x2:camX+rightX*1.5*s,y2:camY-rightZ*1.5*s,stroke:"var(--camera)","stroke-width":2.3,"marker-end":"url(#camera-arrow)"}));
+ svg.appendChild(node("line",{x1:camX,y1:camY,x2:camX+frontX*1.8*s,y2:camY-frontZ*1.8*s,stroke:"var(--camera)","stroke-width":2.8,"marker-end":"url(#camera-arrow)"}));
+ svg.appendChild(node("text",{x:camX+rightX*1.58*s,y:camY-rightZ*1.58*s-7,fill:"var(--camera)","font-size":11.5},"Xc（右）"));
+ svg.appendChild(node("text",{x:camX+frontX*1.87*s+5,y:camY-frontZ*1.87*s,fill:"var(--camera)","font-size":11.5},"Zc（前）"));
+ svg.appendChild(node("line",{x1:camX,y1:camY,x2:pX,y2:pY,stroke:"var(--move)","stroke-width":2,"stroke-dasharray":"6 4"}));
+ var body=node("g",{transform:"translate("+camX+" "+camY+") rotate("+deg+")"});body.appendChild(node("path",{d:"M -14 10 L 14 10 L 10 -12 L -10 -12 Z",fill:"var(--panel)",stroke:"var(--camera)","stroke-width":2}));body.appendChild(node("path",{d:"M -8 -12 L 0 -24 L 8 -12",fill:"var(--camera)"}));svg.appendChild(body);
+ point(svg,pX,pY,"var(--move)","Pw = (5, 3)",10,-11);svg.appendChild(node("text",{x:camX+16,y:camY+24,fill:"var(--camera)","font-size":12,"font-weight":700},"C = ("+fmt(cx,0)+", "+fmt(cz,0)+")"));
+ text("out-cx",fmt(cx,0));text("out-cz",fmt(cz,0));text("out-heading",fmt(deg,0)+"°");
+ el("camera-r").innerHTML="R = [ "+fmt(co,3)+"　"+fmt(-si,3)+" ]<br>　　[ "+fmt(si,3)+"　"+fmt(co,3)+" ]　 t = <span class=\"answer-c\">("+fmt(tx,3)+", "+fmt(tz,3)+")</span>";
+ el("camera-calc").innerHTML="P<sub>w</sub> − C = (5, 3) − ("+fmt(cx,0)+", "+fmt(cz,0)+")<br>　　　　　 = ("+fmt(dx,0)+", "+fmt(dz,0)+")<br>P<sub>c</sub> = R(P<sub>w</sub> − C) = <span class=\"answer-c\">("+fmt(xc,3)+", "+fmt(zc,3)+")</span>";
+ var side=Math.abs(xc)<.01?"正面":xc<0?"左 "+fmt(Math.abs(xc),2)+" m":"右 "+fmt(xc,2)+" m",front=zc>=0?"前 "+fmt(zc,2)+" m":"後ろ "+fmt(Math.abs(zc),2)+" m";
+ el("camera-meaning").innerHTML="カメラから見ると、点は <strong>"+side+"、"+front+"</strong> にあります。"+(zc<=0?" Z<sub>c</sub> ≤ 0 なのでカメラには写りません。":"")
+}
+["tx","ty"].forEach(function(id){el(id).addEventListener("input",drawTranslation)});el("angle").addEventListener("input",drawRotation);["cx","cz","heading"].forEach(function(id){el(id).addEventListener("input",drawCamera)});
+drawTranslation();drawRotation();drawCamera()
+})();
+</script>
+</body>
+</html>
