@@ -1,10 +1,11 @@
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>カメラ内部パラメータ</title>
-<style>
+---
+// カメラ内部パラメータ（camera-intrinsics.html から移植）
+import ArticlePage from '../../layouts/ArticlePage.astro';
+---
+
+<ArticlePage id="camera-intrinsics">
+<Fragment slot="head">
+<style is:inline>
   :root {
     --ground: #E7EAEE;
     --surface: #F1F3F6;
@@ -484,8 +485,7 @@
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
-</head>
-<body>
+</Fragment>
 
 <div class="wrap">
 
@@ -619,7 +619,7 @@
       solvePnP の結果を読むときに取り違えやすい点なので、先にここで区別しておきます。
     </p>
     <p class="callout">
-      <b>R と t を初めて学ぶ場合</b>は、先に<a href="rotation-translation-guide.html">「回転行列と並進ベクトル」</a>を読むと、
+      <b>R と t を初めて学ぶ場合</b>は、先に<a href="/articles/rotation-translation/">「回転行列と並進ベクトル」</a>を読むと、
       ベクトルの足し算からカメラ座標への書き換えまでを、動く図と具体的な数値で確認できます。
     </p>
 
@@ -1242,7 +1242,7 @@
 
 </div>
 
-<script>
+<script is:inline>
 (function () {
   "use strict";
 
@@ -1541,5 +1541,4 @@
 })();
 </script>
 
-</body>
-</html>
+</ArticlePage>

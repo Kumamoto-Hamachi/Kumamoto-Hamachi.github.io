@@ -1,10 +1,11 @@
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ピンホールの演習</title>
-<style>
+---
+// ピンホールの演習（pinhole-camera-exercises.html から移植）
+import ArticlePage from '../../layouts/ArticlePage.astro';
+---
+
+<ArticlePage id="pinhole-camera-exercises">
+<Fragment slot="head">
+<style is:inline>
   :root {
     --ground: #E7EAEE;
     --surface: #F1F3F6;
@@ -268,8 +269,7 @@
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
-</head>
-<body>
+</Fragment>
 
 <div class="wrap">
 
@@ -277,7 +277,7 @@
     <div class="eyebrow">Pinhole camera model / Exercises</div>
     <h1>ピンホールの演習</h1>
     <p class="lede">
-      ガイド「<a href="pinhole-camera-model.html">ピンホールの相似三角形</a>」の内容だけで解ける12問です。
+      ガイド「<a href="/articles/pinhole-camera-model/">ピンホールの相似三角形</a>」の内容だけで解ける12問です。
       数値はどれも筆算で終わる大きさにしてあります。
       まず自力で答えを出し、それから折りたたみを開いて確かめてください。
     </p>
@@ -661,11 +661,10 @@
   </section>
 
   <footer>
-    全12問。数値設定はガイド「<a href="pinhole-camera-model.html">ピンホールの相似三角形</a>」の初期値
+    全12問。数値設定はガイド「<a href="/articles/pinhole-camera-model/">ピンホールの相似三角形</a>」の初期値
     （f<sub>x</sub> = 800 px、L = 0.10 m、画像 640 × 480 px）に合わせてあり、答えの多くはガイドのスライダーを動かして再現できます。
   </footer>
 
 </div>
 
-</body>
-</html>
+</ArticlePage>
