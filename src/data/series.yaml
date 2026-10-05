@@ -1,0 +1,4 @@
+- id: camera-geometry
+  title: カメラと距離推定
+  eyebrow: Camera & distance estimation
+  description: 画像に写る大きさから距離が分かる仕組みを、幾何の基礎から実装まで順にたどる図解ガイドです。初めて読む場合は、番号順に進んでください。

@@ -1,0 +1,31 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  themeColor?: string;
+  ogType?: 'website' | 'article';
+}
+
+const { title, description, themeColor, ogType = 'website' } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{description && <meta name="description" content={description}>}
+{themeColor && <meta name="theme-color" content={themeColor}>}
+<title>{title}</title>
+<link rel="canonical" href={canonical}>
+<meta property="og:type" content={ogType}>
+<meta property="og:title" content={title}>
+{description && <meta property="og:description" content={description}>}
+<meta property="og:url" content={canonical}>
+<slot name="head" />
+</head>
+<body>
+<slot />
+</body>
+</html>
