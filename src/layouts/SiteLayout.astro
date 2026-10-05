@@ -1,0 +1,106 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import { SITE_NAME } from '../site';
+import '../styles/site.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  // ヘッダーのナビで現在地として示す項目
+  current?: 'articles' | 'categories' | 'series';
+}
+
+const { title, description, current } = Astro.props;
+const nav = [
+  { key: 'articles', label: '記事', href: '/articles/' },
+  { key: 'categories', label: 'カテゴリ', href: '/categories/' },
+  { key: 'series', label: 'シリーズ', href: '/series/' },
+] as const;
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="page">
+    <header class="site-header">
+      <a class="site-name" href="/">{SITE_NAME}</a>
+      <nav aria-label="サイト内ナビゲーション">
+        <ul>
+          {
+            nav.map((item) => (
+              <li>
+                <a href={item.href} aria-current={item.key === current ? 'page' : undefined}>
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <span>{SITE_NAME.toUpperCase()}</span>
+      <span>&copy; {new Date().getUTCFullYear()}</span>
+    </footer>
+  </div>
+</BaseLayout>
+
+<style>
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .1em;
+  }
+
+  .site-name {
+    color: var(--ink);
+    font-weight: 700;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  nav a {
+    display: inline-block;
+    padding: 4px 0;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  nav a:hover { color: var(--ink); }
+
+  nav a[aria-current='page'] {
+    color: var(--ink);
+    border-bottom-color: var(--orange);
+  }
+
+  .site-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 56px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .08em;
+  }
+</style>

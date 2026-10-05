@@ -1,0 +1,37 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import CountedLink from '../../components/CountedLink.astro';
+import { SITE_NAME } from '../../site';
+import { getSeriesWithArticles, seriesUrl } from '../../lib/content';
+
+const seriesList = await getSeriesWithArticles();
+const accents = ['blue', 'green', 'violet', 'orange'] as const;
+---
+
+<SiteLayout
+  title={`シリーズ | ${SITE_NAME}`}
+  description="順番に読み進める学習ルート（シリーズ）の一覧。"
+  current="series"
+>
+  <div class="page-head page-head--compact">
+    <div>
+      <p class="eyebrow">Series</p>
+      <h1>シリーズ</h1>
+    </div>
+    <p class="lede">順番に読み進める学習ルートです。分野を横断する記事もまとめています。</p>
+  </div>
+  <ul class="panel-grid">
+    {
+      seriesList.map(({ series, articles }, i) => (
+        <CountedLink
+          href={seriesUrl(series.id)}
+          eyebrow={series.data.eyebrow}
+          title={series.data.title}
+          description={series.data.description}
+          count={articles.length}
+          accent={accents[i % accents.length]}
+        />
+      ))
+    }
+  </ul>
+</SiteLayout>

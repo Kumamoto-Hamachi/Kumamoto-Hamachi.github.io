@@ -1,0 +1,108 @@
+---
+// カテゴリ・シリーズを名前・説明・件数つきで並べるパネル
+interface Props {
+  href: string;
+  eyebrow?: string;
+  title: string;
+  description: string;
+  count: number;
+  accent?: 'blue' | 'green' | 'violet' | 'orange';
+}
+
+const { href, eyebrow, title, description, count, accent = 'blue' } = Astro.props;
+---
+
+<li class="panel" style={`--accent: var(--${accent})`}>
+  <div class="meta">
+    <span>{eyebrow ?? ''}</span>
+    <span class="count">{count} 本</span>
+  </div>
+  <h3><a href={href}>{title}</a></h3>
+  <p>{description}</p>
+  <span class="arrow" aria-hidden="true">→</span>
+</li>
+
+<style>
+  .panel {
+    position: relative;
+    min-height: 190px;
+    padding: clamp(22px, 4vw, 32px);
+    padding-bottom: 52px;
+    overflow: hidden;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--accent);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform .24s ease;
+  }
+
+  .panel:hover,
+  .panel:focus-within {
+    z-index: 1;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
+
+  .panel:hover::before,
+  .panel:focus-within::before { transform: scaleY(1); }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  .meta span:first-child { color: var(--accent); font-weight: 700; }
+  .count { white-space: nowrap; }
+
+  h3 {
+    margin: 0 0 12px;
+    font-family: var(--mincho);
+    font-size: clamp(20px, 3vw, 25px);
+    font-weight: 600;
+    line-height: 1.45;
+    letter-spacing: .02em;
+    text-wrap: balance;
+  }
+
+  h3 a { color: inherit; text-decoration: none; }
+  h3 a:focus-visible { outline: none; }
+  h3 a::after { content: ''; position: absolute; inset: 0; }
+
+  p { margin: 0; color: var(--ink-2); line-height: 1.85; }
+
+  .arrow {
+    position: absolute;
+    right: clamp(22px, 4vw, 32px);
+    bottom: 20px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 19px;
+    transition: transform .2s ease;
+  }
+
+  .panel:hover .arrow,
+  .panel:focus-within .arrow { transform: translateX(5px); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel, .panel::before, .arrow { transition: none; }
+  }
+</style>

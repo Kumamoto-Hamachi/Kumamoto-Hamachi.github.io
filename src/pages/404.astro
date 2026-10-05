@@ -1,0 +1,16 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { SITE_NAME } from '../site';
+---
+
+<SiteLayout title={`ページが見つかりません | ${SITE_NAME}`}>
+  <div class="page-head page-head--compact">
+    <div>
+      <p class="eyebrow">404 / Not found</p>
+      <h1>ページが見つかりません</h1>
+    </div>
+    <p class="lede">
+      記事の URL は <code>/articles/&lt;記事名&gt;/</code> の形に変わりました。<a href="/articles/">記事一覧</a>か<a href="/">トップ</a>から探してください。
+    </p>
+  </div>
+</SiteLayout>
