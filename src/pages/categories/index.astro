@@ -1,0 +1,36 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import CountedLink from '../../components/CountedLink.astro';
+import { SITE_NAME } from '../../site';
+import { getCategoriesWithArticles, categoryUrl } from '../../lib/content';
+
+const categories = await getCategoriesWithArticles();
+const accents = ['blue', 'green', 'violet', 'orange'] as const;
+---
+
+<SiteLayout
+  title={`カテゴリ | ${SITE_NAME}`}
+  description="記事を分野ごとに探せるカテゴリの一覧。"
+  current="categories"
+>
+  <div class="page-head page-head--compact">
+    <div>
+      <p class="eyebrow">Categories</p>
+      <h1>カテゴリ</h1>
+    </div>
+    <p class="lede">記事を分野ごとに探せます。記事のあるカテゴリだけを並べています。</p>
+  </div>
+  <ul class="panel-grid">
+    {
+      categories.map(({ category, articles }, i) => (
+        <CountedLink
+          href={categoryUrl(category.id)}
+          title={category.data.name}
+          description={category.data.description}
+          count={articles.length}
+          accent={accents[i % accents.length]}
+        />
+      ))
+    }
+  </ul>
+</SiteLayout>

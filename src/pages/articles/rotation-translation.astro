@@ -1,11 +1,11 @@
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="回転行列と並進ベクトルを、図と具体的な数値計算で基礎から学ぶ線形代数入門ガイド。">
-<title>回転行列と並進ベクトル</title>
-<style>
+---
+// 回転行列と並進ベクトル（rotation-translation-guide.html から移植）
+import ArticlePage from '../../layouts/ArticlePage.astro';
+---
+
+<ArticlePage id="rotation-translation" description="回転行列と並進ベクトルを、図と具体的な数値計算で基礎から学ぶ線形代数入門ガイド。">
+<Fragment slot="head">
+<style is:inline>
 :root{
   --ground:#e7eaee;--surface:#f1f3f6;--panel:#fdfdfe;--ink:#151a22;--ink2:#454f5e;
   --muted:#78828f;--line:#c6ccd5;--soft:#dde1e7;--rotate:#6555a3;--move:#c26c15;
@@ -84,10 +84,9 @@ footer{padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font
 @media(max-width:760px){.goal-strip,.quiz,.visual-grid,.concept-grid,.basis-grid{grid-template-columns:1fr}.topline span:last-child{display:none}.compare{min-width:650px}.table-scroll{overflow-x:auto}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
-</head>
-<body>
+</Fragment>
 <div class="wrap">
-  <div class="topline"><a href="index.html">← Guide index</a><span>Linear algebra for camera geometry</span></div>
+  <div class="topline"><a href="/series/camera-geometry/">← Guide index</a><span>Linear algebra for camera geometry</span></div>
   <header>
     <div class="eyebrow">Foundation / extrinsic parameters</div>
     <h1>回転行列と<wbr>並進ベクトル</h1>
@@ -363,11 +362,11 @@ footer{padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font
     </div>
   </section>
 
-  <a class="next" href="camera-intrinsics.html"><span><small>NEXT GUIDE</small><b>カメラ内部パラメータへ進む</b></span><span class="arrow" aria-hidden="true">→</span></a>
+  <a class="next" href="/articles/camera-intrinsics/"><span><small>NEXT GUIDE</small><b>カメラ内部パラメータへ進む</b></span><span class="arrow" aria-hidden="true">→</span></a>
   <footer>図はページ内の JavaScript で計算しています。FIG. 3 は説明を平面に絞るため、世界とカメラの X–Z 平面を上から見ています。3D の符号と軸方向は OpenCV の規約（X 右・Y 下・Z 前方）に接続しています。</footer>
 </div>
 
-<script>
+<script is:inline>
 (function(){
 "use strict";
 var NS="http://www.w3.org/2000/svg";
@@ -454,5 +453,4 @@ function drawCamera(){
 drawTranslation();drawRotation();drawCamera()
 })();
 </script>
-</body>
-</html>
+</ArticlePage>

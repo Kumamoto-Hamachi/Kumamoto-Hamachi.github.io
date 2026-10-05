@@ -1,0 +1,28 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import ArticleGrid from '../../components/ArticleGrid.astro';
+import { SITE_NAME } from '../../site';
+import { getCategoriesWithArticles, type CategoryWithArticles } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const categories = await getCategoriesWithArticles();
+  return categories.map((item) => ({ params: { id: item.category.id }, props: item }));
+}
+
+const { category, articles } = Astro.props as CategoryWithArticles;
+---
+
+<SiteLayout
+  title={`${category.data.name} | ${SITE_NAME}`}
+  description={`${category.data.name}の記事一覧（${articles.length} 本）。${category.data.description}`}
+  current="categories"
+>
+  <div class="page-head page-head--compact">
+    <div>
+      <p class="eyebrow">Category</p>
+      <h1>{category.data.name}</h1>
+    </div>
+    <p class="lede">{category.data.description}（{articles.length} 本）</p>
+  </div>
+  <ArticleGrid articles={articles} />
+</SiteLayout>

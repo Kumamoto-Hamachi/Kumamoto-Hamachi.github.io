@@ -1,11 +1,11 @@
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="起伏のある砂地を走るローバーで、ArUcoマーカーから距離を推定するための図解ガイド。座標系、PnP、距離の種類、地面距離への変換、OpenCV実装を説明する。">
-<title>ArUcoでローバーの距離を測る</title>
-<style>
+---
+// ArUcoでローバーの距離を測る（aruco-rover-distance-guide.html から移植）
+import ArticlePage from '../../layouts/ArticlePage.astro';
+---
+
+<ArticlePage id="aruco-rover-distance" description="起伏のある砂地を走るローバーで、ArUcoマーカーから距離を推定するための図解ガイド。座標系、PnP、距離の種類、地面距離への変換、OpenCV実装を説明する。">
+<Fragment slot="head">
+<style is:inline>
   :root {
     --ground: #e8ebef;
     --surface: #f3f5f7;
@@ -576,8 +576,7 @@
     a { color: inherit; }
   }
 </style>
-</head>
-<body>
+</Fragment>
 <div class="page">
   <div class="topbar">
     <div class="brand">ROVER VISION GUIDE / ARUCO RANGE</div>
@@ -1038,13 +1037,13 @@ corners, ids, rejected = detector.detectMarkers(frame)
         residual = projected.reshape(<span class="code-value">4</span>, <span class="code-value">2</span>) - image_points
         reprojection_rmse = float(np.sqrt(np.mean(np.sum(residual**<span class="code-value">2</span>, axis=<span class="code-value">1</span>))))
 
-        print({
+        print(&#123;
             <span class="code-value">"id"</span>: int(marker_id),
             <span class="code-value">"tvec_m"</span>: [float(tx), float(ty), float(tz)],
             <span class="code-value">"distance_m"</span>: distance,
             <span class="code-value">"camera_in_marker_m"</span>: camera_in_marker.ravel().tolist(),
             <span class="code-value">"reprojection_rmse_px"</span>: reprojection_rmse,
-        })</code></pre>
+        &#125;)</code></pre>
 
         <div class="callout"><strong><code>marker_length</code>は黒い外枠を含むマーカー正方形の実寸に合わせます。</strong>印刷時の拡大縮小や、板へ貼るときの伸びを定規で確認してください。指定した単位が<code>tvec</code>の単位になります。</div>
       </section>
@@ -1103,7 +1102,7 @@ corners, ids, rejected = detector.detectMarkers(frame)
   <footer>このガイドの距離は幾何学的な推定値です。停止距離や安全余裕を含む制御値は、実機で測った誤差分布と遅延を基に別途設計してください。</footer>
 </div>
 
-<script>
+<script is:inline>
   const root = document.documentElement;
   const themeButton = document.getElementById('themeButton');
 
@@ -1130,5 +1129,4 @@ corners, ids, rejected = detector.detectMarkers(frame)
   inputs.forEach((input) => input.addEventListener('input', updateDistance));
   updateDistance();
 </script>
-</body>
-</html>
+</ArticlePage>

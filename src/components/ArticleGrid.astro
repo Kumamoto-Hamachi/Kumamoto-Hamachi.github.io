@@ -1,0 +1,31 @@
+---
+import { getCollection } from 'astro:content';
+import ArticleCard from './ArticleCard.astro';
+import type { Article } from '../lib/content';
+
+interface Props {
+  articles: Article[];
+}
+
+const { articles } = Astro.props;
+const [categories, seriesList] = await Promise.all([
+  getCollection('categories'),
+  getCollection('series'),
+]);
+const categoryNames = new Map(categories.map((c) => [c.id, c.data.name]));
+const seriesTitles = new Map(seriesList.map((s) => [s.id, s.data.title]));
+const accents = ['blue', 'green', 'violet', 'orange'] as const;
+---
+
+<ul class="panel-grid">
+  {
+    articles.map((article, i) => (
+      <ArticleCard
+        article={article}
+        categoryName={categoryNames.get(article.data.category.id) ?? article.data.category.id}
+        seriesTitle={article.data.series ? seriesTitles.get(article.data.series.id) : undefined}
+        accent={accents[i % accents.length]}
+      />
+    ))
+  }
+</ul>

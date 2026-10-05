@@ -1,13 +1,13 @@
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ピンホールの相似三角形</title>
-<style>*{margin:0;padding:0}</style>
-</head>
-<body>
-<style>
+---
+// ピンホールの相似三角形（pinhole-camera-model.html から移植）
+import ArticlePage from '../../layouts/ArticlePage.astro';
+---
+
+<ArticlePage id="pinhole-camera-model">
+<Fragment slot="head">
+<style is:inline>*{margin:0;padding:0}</style>
+</Fragment>
+<style is:inline>
   :root {
     --ground: #E7EAEE;
     --surface: #F1F3F6;
@@ -802,7 +802,7 @@
 
 </div>
 
-<script>
+<script is:inline>
 (function () {
   "use strict";
 
@@ -1223,5 +1223,4 @@
 })();
 </script>
 
-</body>
-</html>
+</ArticlePage>

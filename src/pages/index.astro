@@ -1,0 +1,74 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import ArticleGrid from '../components/ArticleGrid.astro';
+import CountedLink from '../components/CountedLink.astro';
+import { SITE_NAME, SITE_DESCRIPTION } from '../site';
+import { getArticles, getCategoriesWithArticles, getSeriesWithArticles, categoryUrl, seriesUrl } from '../lib/content';
+
+const [articles, categories, seriesList] = await Promise.all([
+  getArticles(),
+  getCategoriesWithArticles(),
+  getSeriesWithArticles(),
+]);
+const latest = articles.slice(0, 6);
+const accents = ['blue', 'green', 'violet', 'orange'] as const;
+---
+
+<SiteLayout title={SITE_NAME} description={SITE_DESCRIPTION}>
+  <div class="page-head page-head--home">
+    <div>
+      <p class="eyebrow">Notes</p>
+      <h1>{SITE_NAME}</h1>
+    </div>
+    <p class="lede">{SITE_DESCRIPTION}</p>
+  </div>
+
+  <section class="section" aria-labelledby="latest">
+    <div class="section-head">
+      <h2 id="latest">新着記事</h2>
+      <p class="section-note"><a href="/articles/">すべての記事（{articles.length} 本） →</a></p>
+    </div>
+    <ArticleGrid articles={latest} />
+  </section>
+
+  <section class="section" aria-labelledby="categories">
+    <div class="section-head">
+      <h2 id="categories">カテゴリ</h2>
+      <p class="section-note"><a href="/categories/">カテゴリ一覧 →</a></p>
+    </div>
+    <ul class="panel-grid">
+      {
+        categories.map(({ category, articles }, i) => (
+          <CountedLink
+            href={categoryUrl(category.id)}
+            title={category.data.name}
+            description={category.data.description}
+            count={articles.length}
+            accent={accents[i % accents.length]}
+          />
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="series">
+    <div class="section-head">
+      <h2 id="series">シリーズ</h2>
+      <p class="section-note"><a href="/series/">シリーズ一覧 →</a></p>
+    </div>
+    <ul class="panel-grid">
+      {
+        seriesList.map(({ series, articles }, i) => (
+          <CountedLink
+            href={seriesUrl(series.id)}
+            eyebrow={series.data.eyebrow}
+            title={series.data.title}
+            description={series.data.description}
+            count={articles.length}
+            accent={accents[i % accents.length]}
+          />
+        ))
+      }
+    </ul>
+  </section>
+</SiteLayout>

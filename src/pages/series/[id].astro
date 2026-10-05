@@ -1,0 +1,151 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import { SITE_NAME } from '../../site';
+import { getSeriesWithArticles, articleUrl, type SeriesWithArticles } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const list = await getSeriesWithArticles();
+  return list.map((item) => ({ params: { id: item.series.id }, props: item }));
+}
+
+const { series, articles } = Astro.props as SeriesWithArticles;
+const accents = ['blue', 'green', 'violet', 'orange'] as const;
+---
+
+<SiteLayout
+  title={`${series.data.title} | ${SITE_NAME}`}
+  description={series.data.description}
+  current="series"
+>
+  <div class="page-head">
+    <div>
+      {series.data.eyebrow && <p class="eyebrow">{series.data.eyebrow}</p>}
+      <h1>{series.data.title}</h1>
+    </div>
+    <p class="lede">{series.data.description}</p>
+  </div>
+
+  <section aria-labelledby="guide">
+    <div class="section-head">
+      <h2 id="guide">学習ガイド</h2>
+      <p class="section-note">{articles.length} ARTICLES</p>
+    </div>
+
+    <nav aria-label="学習ガイド一覧">
+      <ol class="panel-grid guides">
+        {
+          articles.map((article, i) => (
+            <li class="guide" style={`--accent: var(--${accents[i % accents.length]})`}>
+              <a href={articleUrl(article.id)}>
+                <div class="guide-meta">
+                  <span class="guide-number">{String(article.data.seriesOrder).padStart(2, '0')}</span>
+                  <span>{article.data.label ?? ''}</span>
+                </div>
+                <h3>{article.data.title}</h3>
+                <p>{article.data.description}</p>
+                <span class="arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+    </nav>
+  </section>
+</SiteLayout>
+
+<style>
+  .guide {
+    --accent: var(--blue);
+    position: relative;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease;
+  }
+
+  .guide a {
+    display: block;
+    min-height: 270px;
+    padding: clamp(24px, 4vw, 36px);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .guide a:focus-visible { outline: none; }
+
+  .guide::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--accent);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform .24s ease;
+  }
+
+  .guide:hover,
+  .guide:focus-within {
+    z-index: 1;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
+
+  .guide:hover::before,
+  .guide:focus-within::before { transform: scaleY(1); }
+
+  .guide-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 38px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  .guide-number { color: var(--accent); font-size: 12px; font-weight: 700; }
+
+  .guide h3 {
+    margin: 0 0 14px;
+    font-family: var(--mincho);
+    font-size: clamp(21px, 3vw, 28px);
+    font-weight: 600;
+    line-height: 1.45;
+    letter-spacing: .02em;
+    text-wrap: balance;
+  }
+
+  .guide p {
+    max-width: 31em;
+    margin: 0;
+    padding-bottom: 20px;
+    color: var(--ink-2);
+    line-height: 1.85;
+  }
+
+  .arrow {
+    position: absolute;
+    right: clamp(24px, 4vw, 36px);
+    bottom: 25px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 19px;
+    transition: transform .2s ease;
+  }
+
+  .guide:hover .arrow,
+  .guide:focus-within .arrow { transform: translateX(5px); }
+
+  @media (max-width: 700px) {
+    .guide a { min-height: 245px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .guide, .guide::before, .arrow { transition: none; }
+  }
+</style>

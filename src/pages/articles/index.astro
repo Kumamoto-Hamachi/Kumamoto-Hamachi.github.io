@@ -1,0 +1,23 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import ArticleGrid from '../../components/ArticleGrid.astro';
+import { SITE_NAME } from '../../site';
+import { getArticles } from '../../lib/content';
+
+const articles = await getArticles();
+---
+
+<SiteLayout
+  title={`記事 | ${SITE_NAME}`}
+  description={`すべての記事を新しい順に並べた一覧（${articles.length} 本）。`}
+  current="articles"
+>
+  <div class="page-head page-head--compact">
+    <div>
+      <p class="eyebrow">Articles</p>
+      <h1>記事</h1>
+    </div>
+    <p class="lede">すべての記事を新しい順に並べています（{articles.length} 本）。</p>
+  </div>
+  <ArticleGrid articles={articles} />
+</SiteLayout>

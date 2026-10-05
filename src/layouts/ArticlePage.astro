@@ -1,0 +1,29 @@
+---
+// 独自デザインの記事ページの外枠。タイトルなどは台帳（src/data/articles.yaml）から取る。
+import { getEntry } from 'astro:content';
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  // 台帳の id。ファイル名（src/pages/articles/<id>.astro）と揃える
+  id: string;
+  // 台帳の description と別の文面を meta description にしたいときに指定する
+  description?: string;
+  themeColor?: string;
+}
+
+const { id, description, themeColor } = Astro.props;
+const entry = await getEntry('articles', id);
+if (!entry) {
+  throw new Error(`src/data/articles.yaml に id: ${id} の記事がありません`);
+}
+---
+
+<BaseLayout
+  title={entry.data.title}
+  description={description ?? entry.data.description}
+  themeColor={themeColor}
+  ogType="article"
+>
+  <slot name="head" slot="head" />
+  <slot />
+</BaseLayout>
